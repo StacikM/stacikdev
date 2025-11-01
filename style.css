@@ -1,26 +1,34 @@
-/* Reset default browser styles */
+/* Reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Page */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212; /* Dark background */
-    color: #e0e0e0; /* Light text */
+    background-color: #121212;
+    color: #e0e0e0;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center everything horizontally */
+    align-items: center; /* Center page content */
     padding: 20px;
 }
 
-/* Container for content to limit width */
+/* Center container */
 .container {
-    max-width: 800px;
+    max-width: 850px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Inner content area that controls card width & spacing */
+.content {
     width: 100%;
     display: flex;
     flex-direction: column;
+    gap: 20px; /* consistent spacing */
     align-items: center;
 }
 
@@ -28,124 +36,77 @@ body {
 h1 {
     font-size: 3rem;
     color: #1ed760;
-    text-align: center;
-    margin-bottom: 0.3em;
+    margin-bottom: 10px;
 }
 
 h2 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: #b0b0b0;
-    text-align: center;
-    margin-bottom: 1em;
+    margin-bottom: 25px;
     font-weight: 400;
 }
 
 h3 {
-    font-size: 1.5rem;
-    margin-top: 2em;
-    margin-bottom: 0.5em;
+    font-size: 1.4rem;
     border-bottom: 2px solid #1ed760;
-    display: inline-block;
     padding-bottom: 5px;
-    color: #e0e0e0;
+    display: inline-block;
+    margin-top: 20px;
+    margin-bottom: 5px;
 }
 
-/* Project and content cards */
-h4, p, li, blockquote, pre, code {
+/* Card Design */
+.content p,
+.content h4,
+.content li,
+.content ul {
     background-color: #1e1e1e;
-    padding: 12px 18px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    margin-bottom: 1em;
     width: 100%;
-    word-wrap: break-word;
+    max-width: 800px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    color: #c9c9c9;
+    text-align: left;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+}
+
+/* Keep H4 as a small card title */
+h4 {
+    font-size: 1.1rem;
+    font-weight: bold;
 }
 
 h4 a {
     color: #1ed760;
     text-decoration: none;
-    transition: color 0.3s ease;
 }
-
 h4 a:hover {
     color: #12b347;
 }
 
-/* Paragraphs */
-p {
-    font-size: 1rem;
-    color: #c0c0c0;
+/* Lists */
+ul {
+    padding-left: 20px;
+}
+li {
+    margin-left: 15px;
 }
 
 /* Links */
 a {
     color: #1ed760;
-    text-decoration: none;
-    transition: color 0.3s ease;
 }
-
 a:hover {
-    color: #12b347;
     text-decoration: underline;
-}
-
-/* Lists */
-ul, ol {
-    padding-left: 40px;
-    margin-bottom: 1em;
-}
-
-li {
-    margin-bottom: 0.5em;
-}
-
-/* Markdown elements */
-blockquote {
-    border-left: 4px solid #1ed760;
-    padding-left: 12px;
-    color: #aaa;
-}
-
-pre {
-    background-color: #2a2a2a;
-    padding: 12px;
-    border-radius: 8px;
-    overflow-x: auto;
-}
-
-code {
-    font-family: 'Courier New', monospace;
-    background-color: #2a2a2a;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.95rem;
+    color: #12b347;
 }
 
 /* Footer */
 footer {
     text-align: center;
-    padding: 2em 0;
-    border-top: 1px solid #333;
     color: #777;
-    margin-top: 3em;
-    font-size: 0.9rem;
+    border-top: 1px solid #333;
+    padding: 20px;
     width: 100%;
-}
-
-/* Hover effects for cards */
-h4:hover, p:hover, li:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-    h1 {
-        font-size: 2.2rem;
-    }
-
-    h2 {
-        font-size: 1.4rem;
-    }
+    margin-top: 30px;
 }
