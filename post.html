@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="postContainer"></div>
+<footer>
+    <p>© 2025 StacikDev. All rights reserved.</p>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+async function loadPost() {
+  // Example: URL: https://frontend.com/post.html?id=1762027735214
+  const params = new URLSearchParams(window.location.search);
+  const postId = params.get('id');
+  if (!postId) {
+    document.getElementById('postContainer').innerHTML = '<p>No post ID provided</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://server.ctksystem.com/post/${postId}`);
+    if (!res.ok) throw new Error('Post not found');
+    const post = await res.json();
+
+    document.getElementById('postContainer').innerHTML =
+      `<h1>${post.title}</h1>` + marked.parse(post.content);
+  } catch (err) {
+    document.getElementById('postContainer').innerHTML = `<p>${err.message}</p>`;
+  }
+}
+
+loadPost();
+</script>
+
+
+</body>
+</html>
