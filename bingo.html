@@ -53,6 +53,13 @@ socket.on("game_ended", ()=>{
   renderBoard()
 })
 
+socket.on("kicked", ()=>{
+  alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by host")
+  socket.disconnect()
+  document.getElementById("board").innerHTML = ""
+})
+
+  
 socket.on("error_msg", msg=>alert("WARNING!\nClient disconnected with an error:\n" + msg))
 
 function renderBoard(){
