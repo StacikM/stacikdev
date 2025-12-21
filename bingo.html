@@ -1,60 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Bingo</title>
-  <style>
-    body{text-align:center;font-family:Arial}
-    #board{display:grid;grid-template-columns:repeat(5,80px);gap:5px;margin:20px auto;}
-    .cell{border:2px solid #000;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
-    .header{background:#222;color:white;font-weight:bold;cursor:default;}
-    .marked{background:#4caf50;color:white;}
-    .bingo{background:gold !important;color:black;}
-  </style>
+<meta charset="UTF-8">
+<title>Bingo Player</title>
+<style>
+  #board { display: grid; grid-template-columns: repeat(5, 60px); gap: 5px; margin-top: 10px; }
+  .cell { width: 60px; height: 60px; border: 1px solid #333; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:18px; }
+  .marked { background-color: green; color: white; }
+</style>
 </head>
 <body>
-<h1>Stanislas' bingo</h1>
-<h1>B I N G O</h1>
+<h1>Stanislas' Bingo</h1>
+<h2>Bingo Player</h2>
+<label>Name: <input id="name" placeholder="Enter your name"></label>
+<button onclick="join()">Join Game</button>
+
 <div id="board"></div>
-<div id="status">Waiting for game server...</div>
+<div id="calledNumbers"></div>
+
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const socket = io("https://server.ctksystem.com")
-const boardEl = document.getElementById("board")
-const statusEl = document.getElementById("status")
-let board=[], marks=[]
+let board = []
 
-const headers=["B","I","N","G","O"]
-headers.forEach(h=>{
-  const div=document.createElement("div")
-  div.className="cell header"
-  div.textContent=h
-  boardEl.appendChild(div)
-})
+function join(){
+  const name = document.getElementById("name").value || "Anonymous"
+  socket.emit("join", name)
+}
 
+// Receive board from server
 socket.on("board", b=>{
-  board=b
-  marks=[]
-  board.slice(0,25).forEach((val,i)=>{
-    const d=document.createElement("div")
-    d.className="cell"
-    d.textContent=val
-    if(val==="FREE"){ d.classList.add("marked"); marks.push(i) }
-    d.onclick=()=>{socket.emit("mark",i)}
-    boardEl.appendChild(d)
-  })
+  board = b
+  renderBoard()
 })
 
+// Receive all previously called numbers
+socket.on("called_numbers", nums=>{
+  nums.forEach(n=>markNumber(n))
+})
+
+// When admin calls a new number
 socket.on("number_called", n=>{
-  statusEl.textContent="Number called: "+n
+  markNumber(n)
 })
 
-socket.on("bingo", name=>{
-  alert("BINGO: "+name)
-})
+// Bingo notification
+socket.on("bingo", ()=>alert("Bingo!"))
 
-socket.on("game_started", ()=>{ statusEl.textContent="Game started" })
-socket.on("game_ended", ()=>{ statusEl.textContent="Game ended" })
+// Render board
+function renderBoard(){
+  const div = document.getElementById("board")
+  div.innerHTML=""
+  board.forEach((val,i)=>{
+    const cell = document.createElement("div")
+    cell.className="cell"
+    cell.textContent=val
+    if(val==="FREE") cell.classList.add("marked")
+    cell.id="cell_"+i
+    div.appendChild(cell)
+  })
+}
+
+// Mark a number if it matches
+function markNumber(n){
+  const idx = board.findIndex(v=>v===n)
+  if(idx===-1) return
+  board[idx] = n // keep value
+  const c = document.getElementById("cell_"+idx)
+  if(c) c.classList.add("marked")
+}
 </script>
 </body>
 </html>
