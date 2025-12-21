@@ -1,29 +1,56 @@
 <!DOCTYPE html>
 <html>
+<head>
+<style>
+  .board { display:grid; grid-template-columns:repeat(5,50px); gap:2px; margin-bottom:20px; }
+  .cell { border:1px solid #000; width:50px; height:50px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .marked { background:#4caf50; color:white; }
+  .bingo { background:gold !important; color:black; }
+</style>
+</head>
 <body>
+
 <h2>Host Panel</h2>
 <button onclick="start()">Start Game</button>
 <button onclick="call()">Call Number</button>
 <button onclick="end()">End Game</button>
+<button onclick="refresh()">Refresh Boards</button>
+
+<div id="boards"></div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const PASS = prompt("Admin password")
 const socket = io("https://server.ctksystem.com")
 
-function start(){
- fetch("/game/start",{method:"POST",headers:{'Content-Type':'application/json'},
- body:JSON.stringify({password:PASS})})
+function start(){ fetch("/start",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
+function call(){ socket.emit("call_number",PASS) }
+function end(){ fetch("/end",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
+
+function refresh(){
+  socket.emit("request_boards", PASS)
 }
 
-function call(){
- socket.emit("call_number", PASS)
-}
+socket.on("all_boards", boards=>{
+  const container = document.getElementById("boards")
+  container.innerHTML = ""
+  boards.forEach(p=>{
+    const title = document.createElement("div")
+    title.textContent = p.name + (p.hasBingo?" 🎉BINGO":"")
+    container.appendChild(title)
 
-function end(){
- fetch("/game/end",{method:"POST",headers:{'Content-Type':'application/json'},
- body:JSON.stringify({password:PASS})})
-}
+    const div = document.createElement("div")
+    div.className="board"
+    p.board.forEach((val,i)=>{
+      const c = document.createElement("div")
+      c.className="cell"
+      c.textContent = val
+      if(val==="FREE" || (p.marks && p.marks.includes(i))) c.classList.add("marked")
+      div.appendChild(c)
+    })
+    container.appendChild(div)
+  })
+})
 </script>
 </body>
 </html>
