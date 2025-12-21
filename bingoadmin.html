@@ -23,9 +23,9 @@
 const PASS = prompt("Admin password")
 const socket = io("https://server.ctksystem.com")
 
-function start(){ fetch("/start",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
+function start(){ fetch("https://server.ctksystem.com/start",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
 function call(){ socket.emit("call_number",PASS) }
-function end(){ fetch("/end",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
+function end(){ fetch("https://server.ctksystem.com/end",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
 
 function refresh(){
   socket.emit("request_boards", PASS)
