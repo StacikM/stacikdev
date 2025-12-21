@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Admin</h2>
+<button onclick="create()">Create Game</button>
+<button onclick="gen()">Generate</button>
+<button onclick="end()">End Game</button>
+<pre id="p"></pre>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const PASS = prompt("Admin password")
+const socket = io("https://server.ctksystem.com")
+
+function create(){
+ fetch("/game/create",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({password:PASS})})
+}
+function gen(){ socket.emit("generate_number",PASS) }
+function end(){
+ fetch("/game/end",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({password:PASS})})
+}
+
+socket.on("players",p=>{
+ document.getElementById("p").textContent=JSON.stringify(p,null,2)
+})
+</script>
+</body>
+</html>
