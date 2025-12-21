@@ -60,6 +60,16 @@ function requestBoards(){
   socket.emit("request_boards", getPass())
 }
 
+function kickPlayer(socketId){
+  if (!confirm("Kick this player?")) return
+
+  socket.emit("kick_player", {
+    password: getPass(),
+    socketId
+  })
+}
+
+
 // ================= SOCKET EVENTS =================
 socket.on("all_boards", boards=>{
   allBoards = boards
