@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <title>Bingo Player</title>
 <style>
-  #board { display: grid; grid-template-columns: repeat(5, 60px); gap: 5px; margin-top: 10px; }
-  .cell { width: 60px; height: 60px; border: 1px solid #333; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:18px; }
-  .marked { background-color: green; color: white; }
+#board { display:grid; grid-template-columns:repeat(5,60px); gap:5px; margin-top:10px; }
+.cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; font-weight:bold; border:1px solid #333; }
+.marked { background-color: green; color:white; }
 </style>
 </head>
 <body>
@@ -14,7 +14,6 @@
 <h2>Bingo Player</h2>
 <label>Name: <input id="name" placeholder="Enter your name"></label>
 <button onclick="join()">Join Game</button>
-
 <div id="board"></div>
 <div id="calledNumbers"></div>
 
@@ -28,34 +27,29 @@ function join(){
   socket.emit("join", name)
 }
 
-// Receive board from server
 socket.on("board", b=>{
   board = b
   renderBoard()
 })
 
-// Receive all previously called numbers
 socket.on("called_numbers", nums=>{
   nums.forEach(n=>markNumber(n))
 })
 
-// When admin calls a new number
 socket.on("number_called", n=>{
   markNumber(n)
 })
 
-// Bingo notification
 socket.on("bingo", ()=>alert("Bingo!"))
-  
-socket.on("game_ended", ()=>{                   // reset board
-  alert("WARNING:\nClient Disconnected\n\nGame ended")
-  board = []
+
+socket.on("game_ended", ()=>{
+  alert("Game ended!")
+  board=[]
   renderBoard()
 })
-socket.on("error_msg", msg=>alert("WARNING!\nClient Deconnected with error\n\n" + msg))
 
+socket.on("error_msg", msg=>alert(msg))
 
-// Render board
 function renderBoard(){
   const div = document.getElementById("board")
   div.innerHTML=""
@@ -69,11 +63,10 @@ function renderBoard(){
   })
 }
 
-// Mark a number if it matches
 function markNumber(n){
   const idx = board.findIndex(v=>v===n)
   if(idx===-1) return
-  board[idx] = n // keep value
+  board[idx]=n
   const c = document.getElementById("cell_"+idx)
   if(c) c.classList.add("marked")
 }
