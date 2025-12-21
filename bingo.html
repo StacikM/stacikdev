@@ -57,6 +57,7 @@ socket.on("kicked", ()=>{
   alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by host")
   socket.disconnect()
   document.getElementById("board").innerHTML = ""
+  document.getElementById("b").setAttribute("disabled", "false")
 })
 
   
