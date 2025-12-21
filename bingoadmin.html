@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <title>Bingo Admin</title>
 <style>
-  #boards { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
-  .player-board { border:1px solid #333; padding:5px; }
-  .board-grid { display: grid; grid-template-columns: repeat(5, 40px); gap:3px; }
-  .cell { width:40px; height:40px; display:flex; justify-content:center; align-items:center; border:1px solid #333; font-size:14px; }
-  .marked { background-color: green; color:white; }
-  .bingo { border:2px solid red; }
+#boards{ display:flex; flex-wrap:wrap; gap:20px; margin-top:20px;}
+.player-board{border:1px solid #333; padding:5px;}
+.board-grid{display:grid; grid-template-columns:repeat(5,40px); gap:3px;}
+.cell{width:40px; height:40px; display:flex; justify-content:center; align-items:center; border:1px solid #333; font-size:14px;}
+.marked{background-color:green; color:white;}
+.bingo{border:2px solid red;}
 </style>
 </head>
 <body>
@@ -60,6 +60,7 @@ function requestBoards(){
   socket.emit("request_boards", getPass())
 }
 
+// ================= SOCKET EVENTS =================
 socket.on("all_boards", boards=>{
   allBoards = boards
   renderBoards()
@@ -70,7 +71,12 @@ socket.on("player_bingo", data=>{
   requestBoards()
 })
 
-// Render all boards
+socket.on("game_ended", ()=>{
+  alert("Game ended!")
+  requestBoards()
+})
+
+// ================= RENDER =================
 function renderBoards(){
   const div = document.getElementById("boards")
   div.innerHTML=""
