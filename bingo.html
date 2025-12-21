@@ -46,6 +46,14 @@ socket.on("number_called", n=>{
 
 // Bingo notification
 socket.on("bingo", ()=>alert("Bingo!"))
+  
+socket.on("game_ended", ()=>{                   // reset board
+  alert("WARNING:\nClient Disconnected\n\nGame ended")
+  board = []
+  renderBoard()
+})
+socket.on("error_msg", msg=>alert("WARNING!\nClient Deconnected with error\n\n" + msg))
+
 
 // Render board
 function renderBoard(){
