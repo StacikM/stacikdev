@@ -48,7 +48,7 @@ socket.on("bingo", ()=>alert("Bingo!"))
 
 socket.on("game_ended", ()=>{
   alert("WARNING:\nClient disconnected:\nGame ended")
-  document.getElementById("b").setAttribute("disabled", "false")
+  document.getElementById("b").removeAttribute("disabled")
   board=[]
   renderBoard()
 })
@@ -57,7 +57,7 @@ socket.on("kicked", ()=>{
   alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by host")
   socket.disconnect()
   document.getElementById("board").innerHTML = ""
-  document.getElementById("b").setAttribute("disabled", "false")
+  document.getElementById("b").removeAttribute("disabled")
 })
 
   
