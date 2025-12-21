@@ -1,56 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<title>Bingo Admin</title>
 <style>
-  .board { display:grid; grid-template-columns:repeat(5,50px); gap:2px; margin-bottom:20px; }
-  .cell { border:1px solid #000; width:50px; height:50px; display:flex; align-items:center; justify-content:center; font-size:14px; }
-  .marked { background:#4caf50; color:white; }
-  .bingo { background:gold !important; color:black; }
+  #boards { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
+  .player-board { border:1px solid #333; padding:5px; }
+  .board-grid { display: grid; grid-template-columns: repeat(5, 40px); gap:3px; }
+  .cell { width:40px; height:40px; display:flex; justify-content:center; align-items:center; border:1px solid #333; font-size:14px; }
+  .marked { background-color: green; color:white; }
+  .bingo { border:2px solid red; }
 </style>
 </head>
 <body>
+<h2>Bingo Admin</h2>
+<label>Password: <input type="password" id="pass"></label>
+<button onclick="startGame()">Start Game</button>
+<button onclick="endGame()">End Game</button>
+<button onclick="callNumber()">Call Number</button>
+<button onclick="requestBoards()">Refresh Boards</button>
 
-<h2>Host Panel</h2>
-<button onclick="start()">Start Game</button>
-<button onclick="call()">Call Number</button>
-<button onclick="end()">End Game</button>
-<button onclick="refresh()">Refresh Boards</button>
-
+<div id="lastNumber"></div>
 <div id="boards"></div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-const PASS = prompt("Admin password")
 const socket = io("https://server.ctksystem.com")
+let allBoards = []
 
-function start(){ fetch("https://server.ctksystem.com/start",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
-function call(){ socket.emit("call_number",PASS) }
-function end(){ fetch("https://server.ctksystem.com/end",{method:"POST",headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:PASS})}) }
+function getPass(){ return document.getElementById("pass").value }
 
-function refresh(){
-  socket.emit("request_boards", PASS)
+function startGame(){
+  fetch("https://server.ctksystem.com/start", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({password:getPass()})
+  }).then(r=>r.json()).then(r=>console.log(r))
+}
+
+function endGame(){
+  fetch("https://server.ctksystem.com/end", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({password:getPass()})
+  }).then(r=>r.json()).then(r=>console.log(r))
+}
+
+function callNumber(){
+  fetch("https://server.ctksystem.com/call", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({password:getPass()})
+  }).then(r=>r.json()).then(r=>{
+    if(r.number) document.getElementById("lastNumber").textContent="Last called: "+r.number
+  })
+}
+
+function requestBoards(){
+  socket.emit("request_boards", getPass())
 }
 
 socket.on("all_boards", boards=>{
-  const container = document.getElementById("boards")
-  container.innerHTML = ""
-  boards.forEach(p=>{
-    const title = document.createElement("div")
-    title.textContent = p.name + (p.hasBingo?" 🎉BINGO":"")
-    container.appendChild(title)
-
-    const div = document.createElement("div")
-    div.className="board"
-    p.board.forEach((val,i)=>{
-      const c = document.createElement("div")
-      c.className="cell"
-      c.textContent = val
-      if(val==="FREE" || (p.marks && p.marks.includes(i))) c.classList.add("marked")
-      div.appendChild(c)
-    })
-    container.appendChild(div)
-  })
+  allBoards = boards
+  renderBoards()
 })
+
+socket.on("player_bingo", data=>{
+  alert("Player "+data.name+" got BINGO!")
+  requestBoards()
+})
+
+// Render all boards
+function renderBoards(){
+  const div = document.getElementById("boards")
+  div.innerHTML=""
+  allBoards.forEach(p=>{
+    const pb = document.createElement("div")
+    pb.className="player-board"
+    if(p.hasBingo) pb.classList.add("bingo")
+    const title = document.createElement("div")
+    title.textContent=p.name
+    pb.appendChild(title)
+    const grid = document.createElement("div")
+    grid.className="board-grid"
+    p.board.forEach((val,i)=>{
+      const cell = document.createElement("div")
+      cell.className="cell"
+      cell.textContent=val
+      if(p.marks.includes(i) || val==="FREE") cell.classList.add("marked")
+      grid.appendChild(cell)
+    })
+    pb.appendChild(grid)
+    div.appendChild(pb)
+  })
+}
 </script>
 </body>
 </html>
