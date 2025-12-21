@@ -13,7 +13,7 @@
 <h1>Stanislas' Bingo</h1>
 <h2>Bingo Player</h2>
 <label>Name: <input id="name" placeholder="Enter your name"></label>
-<button onclick="join()">Join Game</button>
+<button id="b" onclick="join()">Join Game</button>
 <div id="board"></div>
 <div>Last number called: <span id="lastNumber">None</span></div>
 
@@ -32,6 +32,7 @@ function join(){
 socket.on("board", b=>{
   board = b
   renderBoard()
+  document.getElementById("b").setAttribute("disabled", "")
 })
 
 socket.on("called_numbers", nums=>{
@@ -47,6 +48,7 @@ socket.on("bingo", ()=>alert("Bingo!"))
 
 socket.on("game_ended", ()=>{
   alert("WARNING:\nClient disconnected:\nGame ended")
+  document.getElementById("b").setAttribute("disabled", "false")
   board=[]
   renderBoard()
 })
