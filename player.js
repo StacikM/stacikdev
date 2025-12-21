@@ -92,7 +92,18 @@ socket.on("bingo", n=>{
 })
 
 socket.on("game_ended", ()=>{
-  alert("WARNING!\nClient disconnected with error\n\nYour game client has disconnected, this might be because the game ended")
+  alert("WARNING!\nClient disconnected\n\nThe game has ended")
+})
+
+socket.on("disconnect", reason => {
+  console.log("❌ Disconnected:", reason)
+
+  // UI reaction
+  alert("WARNING!\nClient disconnected with error\n\nError, please report this: " + reason)
+})
+
+socket.on("reconnect", attempt => {
+  console.log("🔄 Reconnected after", attempt, "attempts")
 })
 
 // ---- UTIL ----
