@@ -85,8 +85,12 @@ function renderBoards(){
     pb.className="player-board"
     if(p.hasBingo) pb.classList.add("bingo")
     const title = document.createElement("div")
-    title.textContent=p.name
+    title.innerHTML = `
+      <strong>${p.name}</strong>
+      <button onclick="kickPlayer('${p.socketId}')">Kick</button>
+    `
     pb.appendChild(title)
+
     const grid = document.createElement("div")
     grid.className="board-grid"
     p.board.forEach((val,i)=>{
