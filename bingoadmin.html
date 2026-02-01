@@ -10,6 +10,11 @@
 .cell{width:40px; height:40px; display:flex; justify-content:center; align-items:center; border:1px solid #333; font-size:14px;}
 .marked{background-color:green; color:white;}
 .bingo{border:2px solid red;}
+    .hidden {
+      display: none !important;
+    }
+    .modal-bg{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:1200;padding:20px}
+    .modal{width:820px;max-width:100%;background:var(--card);padding:20px;border-radius:12px;}
 </style>
 </head>
 <body>
@@ -22,6 +27,16 @@
 
 <div id="lastNumber"></div>
 <div id="boards"></div>
+<div id="error" class="modal-bg hidden">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>AN ERROR OCCURED!</h3>
+      <p id="errortxt">Error: </p>
+      <br>
+      <button onclick="closeError()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
@@ -69,6 +84,14 @@ function kickPlayer(socketId){
   })
 }
 
+function errorTrigger(error) {
+  document.getElementById("errortxt").innerText = "Error: " + error
+  document.getElementById("error").classList.remove("hidden")
+}
+
+function closeError() {
+  document.getElementById("error").classList.add("hidden")
+}
 
 // ================= SOCKET EVENTS =================
 socket.on("all_boards", boards=>{
