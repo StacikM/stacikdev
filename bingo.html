@@ -54,14 +54,14 @@ socket.on("game_ended", ()=>{
 })
 
 socket.on("kicked", ()=>{
-  alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by host")
+  alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by administrator.")
   socket.disconnect()
   document.getElementById("board").innerHTML = ""
   document.getElementById("b").removeAttribute("disabled")
 })
 
   
-socket.on("error_msg", msg=>alert("WARNING!\nClient disconnected with an error:\n" + msg))
+socket.on("error_msg", msg=>alert("WARNING!\nClient disconnected with an error:\n\nThe CTK Server has disconnected you because of an error, you are currently trying to reconnect. Error: " + msg))
 
 function renderBoard(){
   const div = document.getElementById("board")
