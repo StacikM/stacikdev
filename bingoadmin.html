@@ -27,6 +27,14 @@
 
 <div id="lastNumber"></div>
 <div id="boards"></div>
+
+<hr>
+<h3>Global Chat</h3>
+<div id="chat" style="height:150px;overflow:auto;border:1px solid #333;padding:5px;"></div>
+<input id="chatInput" placeholder="Admin message..." style="width:80%">
+<button onclick="sendAdminChat()">Send</button>
+
+    
 <div id="error" class="modal-bg hidden">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -121,6 +129,7 @@ function renderBoards(){
     title.innerHTML = `
       <strong>${p.name}</strong>
       <button onclick="kickPlayer('${p.socketId}')">Kick</button>
+      <button onclick="pmPlayer('${p.socketId}', '${p.name}')">PM</button>
     `
     pb.appendChild(title)
 
@@ -137,6 +146,38 @@ function renderBoards(){
     div.appendChild(pb)
   })
 }
+
+function sendAdminChat(){
+  const input = document.getElementById("chatInput")
+  if(!input.value.trim()) return
+
+  socket.emit("global_message", {
+    name: "ADMIN",
+    message: input.value
+  })
+
+  input.value = ""
+}
+
+socket.on("global_message", data=>{
+  const chat = document.getElementById("chat")
+  const div = document.createElement("div")
+  div.textContent = `${data.from}: ${data.message}`
+  chat.appendChild(div)
+  chat.scrollTop = chat.scrollHeight
+})
+
+function pmPlayer(socketId, name){
+  const msg = prompt(`Send private message to ${name}:`)
+  if(!msg) return
+
+  socket.emit("admin_private_message", {
+    password: getPass(),
+    toSocketId: socketId,
+    message: msg
+  })
+}
+
 </script>
 </body>
 </html>
