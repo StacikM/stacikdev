@@ -123,3 +123,21 @@ footer {
     font-size: 0.95rem;
     backdrop-filter: blur(3px);
 }
+
+p {
+    line-height: 1.6;
+}
+
+/* button links */
+a.button {
+    display: inline-block;
+    background: linear-gradient(145deg, #1a0529, #0e001a);
+    border: 1px solid rgba(162, 89, 255, 0.25);
+    padding: 12px 22px;
+    border-radius: 8px;
+    color: #e7dbff;
+    text-decoration: none;
+    box-shadow: 0 0 12px rgba(162, 89, 255, 0.15);
+    backdrop-filter: blur(4px);
+    transition: 0.2s ease;
+}

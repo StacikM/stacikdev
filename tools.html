@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacik.dev | cool stuff</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Stacik.dev</h1>
+    <h2>Cool stuff</h2>
+    <br>
+    <h3>These are some cool tools I made</h3>
+    <ul>
+        <h4>Drag these to your bookmarks (to use, click while on a website):</h4>
+        <a class="button" href="javascript:(function(){if(document.getElementById('darkmode-bookmarklet')){document.getElementById('darkmode-bookmarklet').remove();return;}var s=document.createElement('style');s.id='darkmode-bookmarklet';s.innerHTML='html{filter:invert(1) hue-rotate(180deg)!important} img,video,iframe{filter:invert(1) hue-rotate(180deg)!important}';document.head.appendChild(s);})();">
+            Dark Mode Toggle
+        </a>
+        <a class="button" href="javascript:(function(){let d=document.getElementById("dm-style");if(d){d.remove();return;}d=document.createElement("style");d.id="dm-style";d.innerHTML=`*{background:#121212!important;color:#e0e0e0!important;border-color:#333!important}img,video{filter:none!important}`;document.head.appendChild(d);})()">More Advanced Dark Mode</a>
+        <br>
+        <br>
+        <a class="button" href="javascript:(()=>{const p=prompt('Roblox placeId?%27);if(!p)return;const g=prompt(%27gameInstanceId (optional)?%27)||%27%27;location.href=%27roblox://experiences/start?placeId=%27+encodeURIComponent(p)+(g?%27&gameInstanceId=%27+encodeURIComponent(g):%27%27);})();">
+            Roblox Game Launcher
+        </a>
+        <br><br>
+        <a class="button" href="javascript:(()=>{var s=document.createElement('script');s.src='https://stacik.dev/socketiointerceptor.js?'+Date.now();document.body.appendChild(s)})();">
+            Socket.IO Interceptor
+        </a>
+        <p>^^ Warning! Using this tool on some websites may trigger their anticheat and get you banned! This tool is in beta</p>
+    </ul>
+</body>
+</html>

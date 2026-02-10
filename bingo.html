@@ -7,6 +7,9 @@
 #board { display:grid; grid-template-columns:repeat(5,60px); gap:5px; margin-top:10px; }
 .cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; font-weight:bold; border:1px solid #333; }
 .marked { background-color: green; color:white; }
+.pending{
+  background: gold;
+}
 </style>
 </head>
 <body>
@@ -29,6 +32,10 @@
 <script>
 const socket = io("https://server.ctksystem.com")
 let board = []
+
+let pendingIndex = null
+let missCounter = 0
+
 
 function join(){
   const name = document.getElementById("name").value || "Anonymous"
@@ -72,23 +79,57 @@ socket.on("error_msg", msg=>alert("WARNING!\nClient disconnected with an error:\
 function renderBoard(){
   const div = document.getElementById("board")
   div.innerHTML=""
+
   board.forEach((val,i)=>{
     const cell = document.createElement("div")
     cell.className="cell"
     cell.textContent=val
-    if(val==="FREE") cell.classList.add("marked")
     cell.id="cell_"+i
+
+    if(val==="FREE") cell.classList.add("marked")
+
+    cell.onclick = ()=>validateCell(i)
+
     div.appendChild(cell)
   })
 }
 
-function markNumber(n){
-  const idx = board.findIndex(v=>v===n)
-  if(idx===-1) return
-  board[idx]=n
-  const c = document.getElementById("cell_"+idx)
-  if(c) c.classList.add("marked")
+function validateCell(i){
+
+  if(i !== pendingIndex) return
+
+  const cell = document.getElementById("cell_"+i)
+  if(!cell) return
+
+  cell.classList.remove("pending")
+  cell.classList.add("marked")
+
+  pendingIndex = null
 }
+
+
+function markNumber(n){
+
+  // if player ignored previous number twice -> cancel it
+  if(pendingIndex !== null){
+    missCounter++
+    if(missCounter >= 2){
+      const old = document.getElementById("cell_"+pendingIndex)
+      if(old) old.classList.remove("pending")
+      pendingIndex = null
+    }
+  }
+
+  const idx = board.findIndex(v=>v===n)
+  if(idx === -1) return
+
+  pendingIndex = idx
+  missCounter = 0
+
+  const cell = document.getElementById("cell_"+idx)
+  if(cell) cell.classList.add("pending")
+}
+
 
 function sendChat(){
   const input = document.getElementById("chatInput")
