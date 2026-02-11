@@ -4,21 +4,260 @@
 <meta charset="UTF-8">
 <title>Bingo Player</title>
 <style>
-#board { display:grid; grid-template-columns:repeat(5,60px); gap:5px; margin-top:10px; }
-.cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; font-weight:bold; border:1px solid #333; }
-.marked { background-color: green; color:white; }
-.pending{
-  background: gold;
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-light: #1f2330;
+  --accent: #7c5cff;
+  --accent-soft: #a58bff;
+  --success: #25d366;
+  --pending: #ffc83d;
+  --border: #2a2f3a;
+  --text: #e7e9ee;
+  --muted: #9aa0ad;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #141823, #0b0d12);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+h1 {
+  margin: 0 0 4px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+h3 {
+  margin-top: 24px;
+}
+
+.app {
+  width: 420px;
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+
+label {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+input {
+  flex: 1;
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* BOARD */
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.cell {
+  aspect-ratio: 1;
+  background: var(--panel-light);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: .15s;
+}
+
+.cell:hover {
+  background: #24293a;
+}
+
+.marked {
+  background: linear-gradient(135deg,var(--success),#1fa855);
+  color: black;
+  transform: scale(.97);
+}
+
+.pending {
+  background: linear-gradient(135deg,var(--pending),#ffb703);
+  color: black;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,200,61,.6); }
+  100% { box-shadow: 0 0 0 10px rgba(255,200,61,0); }
+}
+
+/* CHAT */
+
+#chat {
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 13px;
+}
+
+#chat div {
+  margin-bottom: 4px;
+}
+
+#chatInput {
+  margin-top: 6px;
+}
+
+/* ALERT OVERLAY */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+}
+
+.mac-alert {
+  width: 520px;
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+}
+
+.alert-header {
+  display: flex;
+  gap: 14px;
+}
+
+.icon {
+  font-size: 32px;
+}
+
+.alert-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.primary {
+  background: var(--accent);
+}
+
+/* SMALL TEXT */
+
+.small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+details summary {
+  cursor: pointer;
+  color: var(--accent-soft);
+}
+
+/* MOBILE */
+
+@media(max-width:480px){
+  .app {
+    width: 100%;
+  }
 }
 </style>
+
 </head>
 <body>
-<h1>Stanislas' Bingo</h1>
+<div class="app">
+  <h1>Stanislas' Bingo</h1>
 <h2>Bingo Player</h2>
 <label>Name: <input id="name" placeholder="Enter your name"></label>
 <button id="b" onclick="join()">Join Game</button>
 <div id="board"></div>
 <div>Last number called: <span id="lastNumber">None</span></div>
+
+<div class="overlay" style="display:none">
+  <div class="mac-alert">
+    <div class="alert-header">
+      <div class="icon">⚠️</div>
+
+      <div class="text" id="errortitle">
+        <h2>hello there. stop using devtools kid</h2>
+
+        <p>
+          just don't
+        </p>
+
+        <details>
+          <summary>What the heck just happened?</summary>
+          <p class="small" id="errortxt">
+            The CTK Server has detected an error/wanted to notify you and has paused your game.
+          </p>
+        </details>
+      </div>
+    </div>
+
+    <div class="alert-footer">
+      <button class="secondary" id="close">Close</button>
+      <button class="primary" id="closea">Report to CTK (Stanislas) (IF ERROR)</button>
+    </div>
+  </div>
+</div>
+
 
 <div id="calledNumbers"></div>
 <hr>
@@ -27,6 +266,7 @@
 <input id="chatInput" placeholder="Type message..." style="width:80%">
 <button onclick="sendChat()">Send</button>
 
+</div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
@@ -36,6 +276,23 @@ let board = []
 let pendingIndex = null
 let missCounter = 0
 
+function spookyError(title, msg) {
+  document.getElementById("errortitle").innerText = title
+  document.getElementById("errortxt").innerText = msg
+  document.querySelector(".overlay").style.display = "grid"
+}
+
+document.getElementById("close").onclick = ()=>{
+  document.querySelector(".overlay").style.display = "none"
+}
+
+document.getElementById("closea").onclick = ()=>{
+  document.querySelector(".overlay").style.display = "none"
+}
+
+function closeError(){
+  document.querySelector(".overlay").style.display = "none"
+}
 
 function join(){
   const name = document.getElementById("name").value || "Anonymous"
@@ -60,21 +317,21 @@ socket.on("number_called", n=>{
 socket.on("bingo", ()=>alert("Bingo!"))
 
 socket.on("game_ended", ()=>{
-  alert("WARNING:\nClient disconnected:\nGame ended")
+  spookyError("Disconnected from server", "The game has ended. Thanks for playing!")
   document.getElementById("b").removeAttribute("disabled")
   board=[]
   renderBoard()
 })
 
 socket.on("kicked", ()=>{
-  alert("WARNING!\nClient disconnected with an error:\n\nMODERATION: Kicked by administrator.")
+  spookyError("Disconnected from server with an error!", "Mr. KANDEEPAN has decided to send you back to the main menu.")
   socket.disconnect()
   document.getElementById("board").innerHTML = ""
   document.getElementById("b").removeAttribute("disabled")
 })
 
   
-socket.on("error_msg", msg=>alert("WARNING!\nClient disconnected with an error:\n\nThe CTK Server has disconnected you because of an error, you are currently trying to reconnect. Error: " + msg))
+socket.on("error_msg", msg=>spookyError("CRITICAL ERROR! AHHHH","WARNING!\nClient disconnected with an error:\n\nThe CTK Server has disconnected you because of an error, you are currently trying to reconnect. Error: " + msg))
 
 function renderBoard(){
   const div = document.getElementById("board")
@@ -153,7 +410,7 @@ socket.on("global_message", data=>{
 
 // Admin private message
 socket.on("private_message", data=>{
-  alert(`PRIVATE MESSAGE FROM ${data.from}:\n\n${data.message}`)
+  spookyError("PRIVATE MESSAGE FROM ADMIN", `${data.from}:\n\n${data.message}`)
 })
 
 </script>
