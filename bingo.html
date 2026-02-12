@@ -371,7 +371,7 @@ function markNumber(n){
   // if player ignored previous number twice -> cancel it
   if(pendingIndex !== null){
     missCounter++
-    if(missCounter >= 2){
+    if(missCounter >= 1){
       const old = document.getElementById("cell_"+pendingIndex)
       if(old) old.classList.remove("pending")
       pendingIndex = null
