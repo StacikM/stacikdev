@@ -352,8 +352,9 @@ function renderBoard(){
 }
 
 function validateCell(i){
-
   if(i !== pendingIndex) return
+
+  socket.emit("validate_cell", i)
 
   const cell = document.getElementById("cell_"+i)
   if(!cell) return
