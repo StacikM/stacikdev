@@ -1,141 +1,268 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
-  <title>Edu Admin</title>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu Game</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #f1f5f9;
+        }
+
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        nav {
+            width: 260px;
+            background: #020617;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border-right: 1px solid #1e293b;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-bottom: 2rem; }
+
+        /* Main Content */
+        main { flex: 1; padding: 2rem; overflow-y: auto; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        /* Controls */
+        input, select, button {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary { background: var(--accent); color: #020617; }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Player List */
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #0f172a;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .alive { background: #064e3b; color: #34d399; }
+        .dead { background: #450a0a; color: #f87171; }
+
+        /* Modal Editor */
+        #qModal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--card-bg); padding: 2rem; border-radius: 16px;
+            z-index: 100; width: 500px; border: 1px solid var(--accent);
+        }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 90; }
+
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
 
-<h2>EduGame Admin</h2>
+<nav>
+    <div class="logo">EDU GAME</div>
+    <input id="pass" type="password" placeholder="Admin Password">
+    <button onclick="toggleSection('editorSection')" class="btn-primary">Question Editor</button>
+    <button onclick="downloadJSON()">Export JSON</button>
+    <hr style="width:100%; border: 0.5px solid #1e293b">
+    <p style="font-size: 0.8rem; color: #64748b;">GAME CONTROLS</p>
+    <select id="mode">
+        <option value="maze">Maze Mode</option>
+        <option value="speed">Speed Quiz</option>
+        <option value="survival">Survival</option>
+    </select>
+    <button onclick="start()" class="btn-success">START SESSION</button>
+    <button onclick="end()" class="btn-danger">TERMINATE GAME</button>
+</nav>
 
-<input id="pass" placeholder="Password"><br><br>
+<main>
+    <div class="grid">
+        <div class="card">
+            <h3>Connected Students</h3>
+            <div id="players">
+                </div>
+        </div>
 
-<select id="mode">
-  <option value="maze">Maze Quiz</option>
-  <option value="speed">Speed Quiz</option>
-  <option value="survival">Survival</option>
-</select>
+        <div class="card">
+            <h3>Leaderboard</h3>
+            <div id="leaderboard">
+                </div>
+        </div>
+    </div>
 
-<button onclick="start()">Start</button> <button onclick="end()">End</button>
+    <div id="editorSection" class="card hidden" style="margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between;">
+            <h3>Content Management</h3>
+            <button onclick="addQuestion()" style="width: auto;">+ New Question</button>
+        </div>
+        <div id="questionList"></div>
+        <button onclick="saveToConfig()" class="btn-primary" style="margin-top: 1rem;">Push to Server</button>
+    </div>
+</main>
 
-<div id="configSection">
-  <h3>Config</h3>
-  <p>to save all of your questions & answers</p>
-  <input type="file" id="fileInput" onchange="loadFile(event)">
-  <button onclick="saveConfig()">Download JSON</button>
+<div id="qModal" class="hidden">
+    <h3>Edit Challenge</h3>
+    <input id="qText" placeholder="Enter Question...">
+    <div id="ansList" style="margin-bottom: 1rem;"></div>
+    <button onclick="addAnswer()">+ Add Answer Option</button>
+    <button onclick="closeModal()" class="btn-success">Save Question</button>
 </div>
-
-<button onclick="toggleAdminView()">Toggle Config View</button>
-
-<script>
-function toggleAdminView() {
-  const x = document.getElementById("configSection");
-  x.style.display = (x.style.display === "none") ? "block" : "none";
-}
-</script>
-
-<h3>Players</h3>
-<ul id="players"></ul>
+<div id="overlay" class="overlay hidden" onclick="closeModal()"></div>
 
 <script>
-const socket = io("https://server.ctksystem.com")
+    const socket = io("https://server.ctksystem.com");
+    let localQuestions = [];
+    let currentEditIdx = null;
 
-function pass(){ return document.getElementById("pass").value }
+    function pass() { return document.getElementById("pass").value; }
 
-// start
-async function start(){
-  await fetch("https://server.ctksystem.com/edu/start",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      password: pass(),
-      gameType: document.getElementById("mode").value
-    })
-  })
-}
+    // --- EDITOR LOGIC ---
+    function toggleSection(id) {
+        const el = document.getElementById(id);
+        el.classList.toggle('hidden');
+    }
 
-// end
-async function end(){
-  await fetch("https://server.ctksystem.com/edu/end",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({password: pass()})
-  })
-}
+    function addQuestion() {
+        localQuestions.push({ question: "New Question", answers: [{text: "Correct", correct: true}] });
+        renderQuestionList();
+    }
 
-// load JSON
-function loadFile(e){
-  const reader = new FileReader()
-  reader.onload = async ()=>{
-    const json = JSON.parse(reader.result)
+    function renderQuestionList() {
+        const list = document.getElementById("questionList");
+        list.innerHTML = localQuestions.map((q, i) => `
+            <div class="q-item">
+                <strong>${i+1}. ${q.question}</strong> 
+                <button onclick="openEdit(${i})">Edit</button>
+                <button onclick="localQuestions.splice(${i},1);renderQuestionList()">Del</button>
+            </div>
+        `).join('');
+    }
 
-    await fetch("https://server.ctksystem.com/edu/config",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        password: pass(),
-        config: json
-      })
-    })
-  }
-  reader.readAsText(e.target.files[0])
-}
+    function openEdit(i) {
+        currentEditIdx = i;
+        const q = localQuestions[i];
+        document.getElementById("qText").value = q.question;
+        renderAnswers(q.answers);
+        document.getElementById("qModal").classList.remove('hidden');
+        document.getElementById("overlay").classList.remove('hidden');
+    }
 
-// save JSON
-async function saveConfig(){
-  const res = await fetch("https://server.ctksystem.com/edu/config?password="+pass())
-  const data = await res.json()
+    function renderAnswers(answers) {
+        const div = document.getElementById("ansList");
+        div.innerHTML = answers.map((a, i) => `
+            <div>
+                <input value="${a.text}" onchange="updateAns(${i}, this.value)">
+                <input type="radio" name="correct" ${a.correct?'checked':''} onclick="setCorrect(${i})"> Correct
+            </div>
+        `).join('');
+    }
 
-  const blob = new Blob([JSON.stringify(data,null,2)])
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = "config.json"
-  a.click()
-}
+    function updateAns(i, val) { localQuestions[currentEditIdx].answers[i].text = val; }
+    function setCorrect(idx) {
+        localQuestions[currentEditIdx].answers.forEach((a, i) => a.correct = (i === idx));
+    }
+    function addAnswer() {
+        localQuestions[currentEditIdx].answers.push({text: "New Option", correct: false});
+        renderAnswers(localQuestions[currentEditIdx].answers);
+    }
+    function closeModal() {
+        localQuestions[currentEditIdx].question = document.getElementById("qText").value;
+        document.getElementById("qModal").classList.add('hidden');
+        document.getElementById("overlay").classList.add('hidden');
+        renderQuestionList();
+    }
 
-// players
-function refresh(){
-  socket.emit("edu_admin_players", pass())
-}
+    // --- API CALLS ---
+    async function saveToConfig() {
+        await fetch("https://server.ctksystem.com/edu/config", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ password: pass(), config: { maze: localQuestions, speed: localQuestions, survival: localQuestions } })
+        });
+        alert("Config Updated!");
+    }
 
-socket.on("edu_players", players=>{
-  const ul = document.getElementById("players")
-  ul.innerHTML = ""
+    function downloadJSON() {
+        const blob = new Blob([JSON.stringify({maze: localQuestions}, null, 2)]);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "quiz.json";
+        a.click();
+    }
 
-  players.forEach(p=>{
-    const li = document.createElement("li")
+    async function start() {
+        await fetch("https://server.ctksystem.com/edu/start", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ password: pass(), gameType: document.getElementById("mode").value })
+        });
+    }
 
-    li.innerHTML = `
-      ${p.name} (${p.score})
-      <button onclick="kick('${p.playerId}')">Kick</button>
-      <button onclick="msg('${p.playerId}')">Msg</button>
-    `
+    async function end() {
+        await fetch("https://server.ctksystem.com/edu/end", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ password: pass() })
+        });
+    }
 
-    ul.appendChild(li)
-  })
-})
-
-function kick(id){
-  socket.emit("edu_kick", {
-    password: pass(),
-    playerId: id
-  })
-}
-
-function msg(id){
-  const m = prompt("Message:")
-  if(!m) return
-
-  socket.emit("edu_pm", {
-    password: pass(),
-    playerId: id,
-    message: m
-  })
-}
-
-setInterval(refresh, 2000)
+    // Socket listeners for player list (same as before)
+    setInterval(() => socket.emit("edu_admin_players", pass()), 2000);
+    socket.on("edu_players", players => {
+        document.getElementById("players").innerHTML = players.map(p => `
+            <li>${p.name} - Score: ${p.score} ${p.alive ? '' : '[DEAD]'} 
+            <button onclick="socket.emit('edu_kick', {password:pass(), playerId:'${p.playerId}'})">Kick</button></li>
+        `).join('');
+    });
 </script>
-
 </body>
 </html>
