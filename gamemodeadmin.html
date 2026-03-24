@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Edu Admin</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<h2>EduGame Admin</h2>
+
+<input id="pass" placeholder="Password"><br><br>
+
+<select id="mode">
+  <option value="maze">Maze Quiz</option>
+  <option value="speed">Speed Quiz</option>
+  <option value="survival">Survival</option>
+</select>
+
+<button onclick="start()">Start</button> <button onclick="end()">End</button>
+
+<div id="configSection">
+  <h3>Config</h3>
+  <p>to save all of your questions & answers</p>
+  <input type="file" id="fileInput" onchange="loadFile(event)">
+  <button onclick="saveConfig()">Download JSON</button>
+</div>
+
+<button onclick="toggleAdminView()">Toggle Config View</button>
+
+<script>
+function toggleAdminView() {
+  const x = document.getElementById("configSection");
+  x.style.display = (x.style.display === "none") ? "block" : "none";
+}
+</script>
+
+<h3>Players</h3>
+<ul id="players"></ul>
+
+<script>
+const socket = io("https://server.ctksystem.com")
+
+function pass(){ return document.getElementById("pass").value }
+
+// start
+async function start(){
+  await fetch("https://server.ctksystem.com/edu/start",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      password: pass(),
+      gameType: document.getElementById("mode").value
+    })
+  })
+}
+
+// end
+async function end(){
+  await fetch("https://server.ctksystem.com/edu/end",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({password: pass()})
+  })
+}
+
+// load JSON
+function loadFile(e){
+  const reader = new FileReader()
+  reader.onload = async ()=>{
+    const json = JSON.parse(reader.result)
+
+    await fetch("https://server.ctksystem.com/edu/config",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        password: pass(),
+        config: json
+      })
+    })
+  }
+  reader.readAsText(e.target.files[0])
+}
+
+// save JSON
+async function saveConfig(){
+  const res = await fetch("https://server.ctksystem.com/edu/config?password="+pass())
+  const data = await res.json()
+
+  const blob = new Blob([JSON.stringify(data,null,2)])
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = "config.json"
+  a.click()
+}
+
+// players
+function refresh(){
+  socket.emit("edu_admin_players", pass())
+}
+
+socket.on("edu_players", players=>{
+  const ul = document.getElementById("players")
+  ul.innerHTML = ""
+
+  players.forEach(p=>{
+    const li = document.createElement("li")
+
+    li.innerHTML = `
+      ${p.name} (${p.score})
+      <button onclick="kick('${p.playerId}')">Kick</button>
+      <button onclick="msg('${p.playerId}')">Msg</button>
+    `
+
+    ul.appendChild(li)
+  })
+})
+
+function kick(id){
+  socket.emit("edu_kick", {
+    password: pass(),
+    playerId: id
+  })
+}
+
+function msg(id){
+  const m = prompt("Message:")
+  if(!m) return
+
+  socket.emit("edu_pm", {
+    password: pass(),
+    playerId: id,
+    message: m
+  })
+}
+
+setInterval(refresh, 2000)
+</script>
+
+</body>
+</html>
