@@ -1,104 +1,233 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Edu Game - Player</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Edu Game - Player Portal</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
-        .door-container { display: flex; justify-content: center; gap: 20px; margin-top: 50px; }
-        .door { 
-            width: 150px; height: 200px; background: #5d4037; 
-            border: 4px solid #3e2723; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; padding: 10px; transition: 0.2s;
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f1f5f9;
+            --danger: #ef4444;
         }
-        .door:hover { background: #795548; transform: scale(1.05); }
-        #status { color: #888; font-size: 0.9em; }
-        .hidden { display: none; }
+
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden;
+        }
+
+        /* Setup Screen */
+        #setup { padding: 2rem; text-align: center; margin-top: 20vh; }
+        input { 
+            padding: 12px; border-radius: 8px; border: 1px solid #334155; 
+            background: #1e293b; color: white; width: 80%; font-size: 1rem; margin-bottom: 1rem;
+        }
+        button.join-btn { 
+            padding: 12px 24px; background: var(--accent); color: #0f172a; 
+            border: none; border-radius: 8px; font-weight: bold; width: 85%;
+        }
+
+        /* Game UI */
+        #game { width: 100%; max-width: 500px; display: none; flex-direction: column; align-items: center; padding-top: 20px; }
+        
+        .header { width: 90%; display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #94a3b8; }
+        
+        #question-box { width: 90%; background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+
+        /* Maze Styles */
+        #gameCanvas { background: #020617; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: none; touch-action: none; }
+        
+        .dpad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 20px; display: none; }
+        .dbtn { 
+            width: 70px; height: 70px; background: #334155; color: white; border: none; 
+            border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+        }
+        .up { grid-column: 2; } .left { grid-column: 1; } .down { grid-column: 2; } .right { grid-column: 3; }
+
+        /* Survival/Speed List */
+        #option-list { width: 90%; display: flex; flex-direction: column; gap: 10px; }
+        .option-btn { 
+            padding: 15px; background: #334155; border: none; border-radius: 8px; 
+            color: white; font-weight: 600; text-align: left;
+        }
+
+        .status-msg { position: fixed; bottom: 10px; font-size: 0.8rem; color: #64748b; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
+
     <div id="setup">
-        <h2>Enter Name</h2>
-        <input id="playerName" placeholder="Your Name">
-        <button onclick="join()">Join Game</button>
+        <h2 style="color: var(--accent)">Enter the Arena</h2>
+        <input id="playerName" type="text" placeholder="Your Name..." maxlength="15">
+        <button class="join-btn" onclick="join()">START PLAYING</button>
     </div>
 
-    <div id="game" class="hidden">
-        <h1 id="qText">Waiting for question...</h1>
-        <div id="doors" class="door-container"></div>
-        <hr>
-        <p>Score: <span id="score">0</span> | Progress: <span id="progress">0</span></p>
-        <p id="status">Connected</p>
+    <div id="game">
+        <div class="header">
+            <span id="pNameDisp">Player</span>
+            <span>Score: <b id="score">0</b></span>
+        </div>
+
+        <div id="question-box">
+            <h3 id="qText">Waiting for next round...</h3>
+        </div>
+
+        <canvas id="gameCanvas" width="320" height="320"></canvas>
+        <div class="dpad" id="dpad">
+            <button class="dbtn up" onclick="move(0, -1)">▲</button>
+            <button class="dbtn left" onclick="move(-1, 0)">◀</button>
+            <button class="dbtn down" onclick="move(0, 1)">▼</button>
+            <button class="dbtn right" onclick="move(1, 0)">▶</button>
+        </div>
+
+        <div id="option-list"></div>
     </div>
+
+    <p class="status-msg" id="status">Connecting...</p>
 
     <script>
         const socket = io("https://server.ctksystem.com");
-        let myId = localStorage.getItem("edu_id") || "p_" + Math.random().toString(36).substring(7);
-        localStorage.setItem("edu_id", myId);
+        let myId = localStorage.getItem("edu_playerId") || "p_" + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem("edu_playerId", myId);
 
-        let gameState = null;
+        let gState = null;
+        let pos = { x: 1, y: 1 };
+        const TILE_SIZE = 32;
 
         function join() {
-            const name = document.getElementById("playerName").value;
+            const name = document.getElementById("playerName").value || "Anonymous";
+            document.getElementById("pNameDisp").innerText = name;
             socket.emit("edu_join", { name, playerId: myId });
-            document.getElementById("setup").classList.add("hidden");
-            document.getElementById("game").classList.remove("hidden");
+            document.getElementById("setup").style.display = "none";
+            document.getElementById("game").style.display = "flex";
         }
 
         socket.on("edu_state", (data) => {
-            gameState = data;
+            gState = data;
             document.getElementById("score").innerText = data.player.score;
-            document.getElementById("progress").innerText = data.player.progress;
-            renderMaze();
+            
+            if (!data.gameStarted) {
+                document.getElementById("qText").innerText = "Waiting for Admin to Start...";
+                return;
+            }
+
+            renderGameMode();
         });
 
-        function renderMaze() {
-            const doorsDiv = document.getElementById("doors");
-            const qTitle = document.getElementById("qText");
-            doorsDiv.innerHTML = "";
+        function renderGameMode() {
+            const mode = gState.gameType;
+            const qBox = document.getElementById("qText");
+            const options = document.getElementById("option-list");
+            const mazeCanvas = document.getElementById("gameCanvas");
+            const dpad = document.getElementById("dpad");
 
-            if (!gameState.gameStarted) {
-                qTitle.innerText = "Game has not started yet.";
+            // Reset visibility
+            options.classList.add("hidden");
+            mazeCanvas.classList.add("hidden");
+            dpad.classList.add("hidden");
+
+            const currentQ = gState.config[mode][gState.player.progress];
+
+            if (!gState.player.alive) {
+                qBox.innerText = "ELIMINATED! Watch the others finish.";
                 return;
             }
 
-            const currentQ = gameState.config.maze[gameState.player.progress];
             if (!currentQ) {
-                qTitle.innerText = "You finished the maze! Wait for Admin.";
+                qBox.innerText = "All questions cleared! Waiting for results...";
                 return;
             }
 
-            qTitle.innerText = currentQ.question;
-            currentQ.answers.forEach((ans, index) => {
-                const d = document.createElement("div");
-                d.className = "door";
-                d.innerText = ans.text;
-                d.onclick = () => {
-                    socket.emit("maze_answer", { playerId: myId, answerIndex: index });
-                };
-                doorsDiv.appendChild(d);
-            });
+            qBox.innerText = currentQ.question;
+
+            if (mode === 'maze') {
+                mazeCanvas.classList.remove("hidden");
+                dpad.classList.remove("hidden");
+                drawMaze();
+            } else {
+                options.classList.remove("hidden");
+                options.innerHTML = currentQ.answers.map((a, i) => `
+                    <button class="option-btn" onclick="sendAnswer(${i})">${a.text}</button>
+                `).join('');
+            }
         }
 
-        socket.on("maze_result", (data) => {
-            // Instant feedback
-            alert(data.correct ? "Correct! You moved forward." : "Wrong door! But keep going.");
-            // State will be updated by the next 'edu_state' or we can manually increment locally
-            document.getElementById("score").innerText = data.score;
-            gameState.player.progress = data.nextIndex;
-            renderMaze();
+        // --- MAZE ENGINE ---
+        function drawMaze() {
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            const map = gState.game.state.currentMap || [];
+            if (!map.length) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            map.forEach((row, y) => {
+                row.forEach((tile, x) => {
+                    if (tile === 1) ctx.fillStyle = "#334155";
+                    else if (['A', 'B', 'C'].includes(tile)) ctx.fillStyle = "#1e293b"; // Exits look like floor until reached
+                    else ctx.fillStyle = "#0f172a";
+                    ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    
+                    // Optional: subtle labels on exit tiles
+                    if (['A', 'B', 'C'].includes(tile)) {
+                        ctx.fillStyle = "#38bdf8";
+                        ctx.font = "10px Arial";
+                        ctx.fillText(tile, x * TILE_SIZE + 12, y * TILE_SIZE + 20);
+                    }
+                });
+            });
+
+            // Player
+            ctx.fillStyle = "#38bdf8";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#38bdf8";
+            ctx.fillRect(pos.x * TILE_SIZE + 6, pos.y * TILE_SIZE + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+            ctx.shadowBlur = 0;
+        }
+
+        function move(dx, dy) {
+            const map = gState.game.state.currentMap;
+            const nx = pos.x + dx;
+            const ny = pos.y + dy;
+
+            if (map[ny] && map[ny][nx] !== 1) {
+                pos.x = nx;
+                pos.y = ny;
+                const tile = map[ny][nx];
+                if (['A', 'B', 'C'].includes(tile)) {
+                    const idx = tile.charCodeAt(0) - 65;
+                    sendAnswer(idx);
+                    pos = { x: 1, y: 1 }; // Reset pos for next level
+                }
+                drawMaze();
+            }
+        }
+
+        function sendAnswer(idx) {
+            const mode = gState.gameType;
+            const eventName = (mode === 'maze') ? "maze_answer" : 
+                             (mode === 'survival') ? "survival_answer" : "speed_answer";
+            
+            socket.emit(eventName, { playerId: myId, answerIndex: idx });
+        }
+
+        // --- CONNECTION HELPERS ---
+        socket.on("connect", () => {
+            document.getElementById("status").innerText = "Online";
+            document.getElementById("status").style.color = "#34d399";
+            // Re-sync if they were already in game
+            if (document.getElementById("setup").style.display === "none") {
+                const name = document.getElementById("playerName").value;
+                socket.emit("edu_join", { name, playerId: myId });
+            }
         });
 
         socket.on("disconnect", () => {
-            document.getElementById("status").innerText = "Disconnected! Reconnecting...";
-        });
-
-        socket.on("connect", () => {
-            document.getElementById("status").innerText = "Connected";
-            // Auto-rejoin if we have a name in memory
-            const name = document.getElementById("playerName").value;
-            if(name) socket.emit("edu_join", { name, playerId: myId });
+            document.getElementById("status").innerText = "Searching for Signal...";
+            document.getElementById("status").style.color = "#ef4444";
         });
     </script>
 </body>
