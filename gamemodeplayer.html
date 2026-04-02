@@ -418,6 +418,16 @@ function showMazeQuestion(question, index, total){
   drawMaze(null)
 }
 
+function showPendingRound(mode){
+  document.getElementById("qaArea").style.display = "block"
+  document.getElementById("mazeWrap").style.display = "none"
+  document.getElementById("endArea").style.display = "none"
+  document.getElementById("qNum").textContent = "GET READY"
+  document.getElementById("headerProgress").textContent = "Q0/0"
+  document.getElementById("qText").textContent = "Waiting for the next "+(mode||"game")+" round..."
+  document.getElementById("optionList").innerHTML = ""
+}
+
 // ======== JOIN ========
 document.getElementById("nameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") joinGame() })
 
@@ -482,14 +492,8 @@ socket.on("edu_started", ({gameType})=>{
 
   resetRoundState()
   updateHeader(gState.player)
-  document.getElementById("headerProgress").textContent = "Q0/0"
-  show("gameScreen")
   showNotif("Game started: "+gameType.toUpperCase(),"event")
-
-  // Hide all sub-areas; the first edu_question event will populate them
-  document.getElementById("qaArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("endArea").style.display = "none"
+  enterGameMode(gState)
 })
 
 socket.on("edu_question",({question,answers,index,total})=>{
@@ -571,7 +575,7 @@ function updateHeader(player){
 
 function enterGameMode(data){
   const mode = data.gameType
-  const player = data.player
+  const player = data.player || {score:0, progress:0, alive:true}
   updateHeader(player)
   show("gameScreen")
 
@@ -591,8 +595,10 @@ function enterGameMode(data){
     const q = questions[player.progress]
     if(q){
       showMazeQuestion(q.question, player.progress, questions.length)
-    } else {
+    } else if(questions.length){
       showFinished(player.score)
+    } else {
+      showPendingRound(mode)
     }
   } else {
     qaArea.style.display = "block"
@@ -601,8 +607,10 @@ function enterGameMode(data){
     const q = questions[player.progress]
     if(q){
       showQuestion(q.question, normalizeAnswers(q.answers), player.progress, questions.length)
-    } else {
+    } else if(questions.length){
       showFinished(player.score)
+    } else {
+      showPendingRound(mode)
     }
   }
 }
