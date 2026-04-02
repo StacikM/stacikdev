@@ -1,268 +1,718 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edu Game</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #38bdf8;
-            --success: #10b981;
-            --danger: #ef4444;
-            --text: #f1f5f9;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Game</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0f;
+  --surface:#13131a;
+  --card:#1c1c28;
+  --border:#2a2a3d;
+  --accent:#c8f545;
+  --accent2:#7c6af7;
+  --danger:#ff4757;
+  --warn:#ffa502;
+  --text:#e8e8f0;
+  --muted:#6b6b8a;
+}
+body{
+  font-family:'Syne',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
 
-        body { 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh;
-        }
+/* SCREENS */
+.screen{
+  display:none;
+  min-height:100vh;
+  flex-direction:column;
+  align-items:center;
+  padding:0 0 40px;
+}
+.screen.active{display:flex}
 
-        /* Sidebar Navigation */
-        nav {
-            width: 260px;
-            background: #020617;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            border-right: 1px solid #1e293b;
-        }
+/* ===== JOIN SCREEN ===== */
+#joinScreen{
+  justify-content:center;
+  padding:40px 24px;
+}
+.join-logo{
+  font-family:'Space Mono',monospace;
+  font-size:13px;color:var(--accent);
+  letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:40px;
+  text-align:center;
+}
+.join-title{
+  font-size:42px;font-weight:800;
+  line-height:1.05;text-align:center;
+  margin-bottom:8px;
+}
+.join-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:40px}
+.join-input{
+  width:100%;padding:16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;color:var(--text);
+  font-size:18px;font-family:'Syne',sans-serif;
+  margin-bottom:14px;text-align:center;
+  transition:border .2s;
+}
+.join-input:focus{outline:none;border-color:var(--accent)}
+.join-btn{
+  width:100%;padding:18px;
+  background:var(--accent);color:#0a0a0f;
+  border:none;border-radius:12px;
+  font-family:'Syne',sans-serif;
+  font-size:16px;font-weight:800;
+  cursor:pointer;
+  transition:transform .1s;
+}
+.join-btn:active{transform:scale(0.97)}
+.join-deco{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;overflow:hidden;z-index:-1;
+}
+.deco-circle{
+  position:absolute;border-radius:50%;
+  background:var(--accent2);opacity:.06;
+}
 
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-bottom: 2rem; }
+/* ===== WAITING SCREEN ===== */
+#waitScreen{
+  justify-content:center;
+  padding:24px;
+  text-align:center;
+}
+.wait-icon{font-size:48px;margin-bottom:20px;animation:float 2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.wait-name{
+  font-size:28px;font-weight:800;
+  color:var(--accent);margin-bottom:8px;
+}
+.wait-msg{font-size:14px;color:var(--muted)}
+.wait-dots span{
+  display:inline-block;animation:blink 1.2s infinite;
+  margin:0 1px;
+}
+.wait-dots span:nth-child(2){animation-delay:.2s}
+.wait-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
 
-        /* Main Content */
-        main { flex: 1; padding: 2rem; overflow-y: auto; }
+/* ===== GAME SCREEN ===== */
+#gameScreen{width:100%;max-width:500px;align-self:center}
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.game-header{
+  width:100%;padding:14px 16px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.score-badge{
+  font-family:'Space Mono',monospace;
+  font-size:13px;font-weight:700;
+  color:var(--accent);
+}
+.progress-text{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
+.player-chip{
+  font-size:12px;color:var(--text);font-weight:700;
+  max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 
-        .card {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
+/* TIMER */
+.timer-bar-wrap{height:3px;background:var(--border);width:100%}
+.timer-bar{height:3px;background:var(--accent);transition:width .5s linear;width:100%}
+.timer-bar.danger{background:var(--danger)}
 
-        /* Controls */
-        input, select, button {
-            width: 100%;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-            box-sizing: border-box;
-        }
+/* QUESTION */
+.question-area{
+  padding:20px 16px 16px;
+}
+.q-number{
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);
+  margin-bottom:8px;font-family:'Space Mono',monospace;
+}
+.q-text{
+  font-size:20px;font-weight:700;line-height:1.35;
+  margin-bottom:20px;
+}
 
-        button {
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: none;
-        }
+/* OPTION BUTTONS */
+.options{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.option-btn{
+  width:100%;padding:16px;
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  color:var(--text);
+  font-family:'Syne',sans-serif;
+  font-size:15px;font-weight:700;
+  text-align:left;cursor:pointer;
+  transition:all .15s;
+  display:flex;align-items:center;gap:12px;
+  position:relative;overflow:hidden;
+}
+.option-btn::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent);opacity:0;
+  transition:opacity .15s;
+}
+.option-btn:active::before{opacity:.08}
+.option-btn.selected{border-color:var(--accent);background:#1a2500}
+.option-btn.correct{border-color:#4ade80;background:#0d2e1a;color:#4ade80}
+.option-btn.wrong{border-color:var(--danger);background:#2e0d0d;color:var(--danger)}
+.option-btn.eliminated{opacity:.3;pointer-events:none}
+.option-letter{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+  transition:background .15s,color .15s;
+}
+.option-btn.selected .option-letter{background:var(--accent);color:#0a0a0f}
+.option-btn.correct .option-letter{background:#4ade80;color:#0d2e1a}
+.option-btn.wrong .option-letter{background:var(--danger);color:#fff}
 
-        .btn-primary { background: var(--accent); color: #020617; }
-        .btn-success { background: var(--success); }
-        .btn-danger { background: var(--danger); }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+/* MAZE */
+#mazeWrap{
+  padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;
+  display:none;
+}
+#gameCanvas{
+  border-radius:12px;
+  border:1px solid var(--border);
+  touch-action:none;
+}
+.dpad{
+  display:grid;
+  grid-template-columns:repeat(3,64px);
+  grid-template-rows:repeat(3,64px);
+  gap:8px;
+}
+.dpad-btn{
+  width:64px;height:64px;
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+  transition:all .1s;
+  display:flex;align-items:center;justify-content:center;
+}
+.dpad-btn:active{background:var(--accent);color:#0a0a0f;transform:scale(0.93)}
+.dpad-empty{width:64px;height:64px}
 
-        /* Player List */
-        .player-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem;
-            background: #0f172a;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
+/* RESULT FEEDBACK */
+.result-overlay{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  z-index:300;pointer-events:none;
+  opacity:0;transition:opacity .2s;
+}
+.result-overlay.show{opacity:1}
+.result-bubble{
+  padding:16px 32px;
+  border-radius:16px;
+  font-size:22px;font-weight:800;
+  transform:scale(0.8);transition:transform .2s;
+}
+.result-overlay.show .result-bubble{transform:scale(1)}
+.result-bubble.correct{background:var(--accent);color:#0a0a0f}
+.result-bubble.wrong{background:var(--danger);color:#fff}
 
-        .status-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-        }
+/* ELIMINATED / DONE */
+.end-screen{
+  padding:40px 24px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;
+  gap:12px;
+}
+.end-icon{font-size:56px;margin-bottom:8px}
+.end-title{font-size:28px;font-weight:800}
+.end-sub{font-size:14px;color:var(--muted)}
+.score-display{
+  margin-top:20px;
+  font-family:'Space Mono',monospace;
+  font-size:48px;font-weight:700;color:var(--accent);
+}
 
-        .alive { background: #064e3b; color: #34d399; }
-        .dead { background: #450a0a; color: #f87171; }
+/* NOTIFICATION */
+.notif{
+  position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-80px);
+  background:var(--warn);color:#0a0a0f;
+  padding:10px 20px;border-radius:30px;
+  font-size:13px;font-weight:700;z-index:400;
+  transition:transform .3s;white-space:nowrap;max-width:90vw;
+  text-align:center;
+}
+.notif.show{transform:translateX(-50%) translateY(0)}
+.notif.broadcast{background:var(--accent2);color:#fff}
+.notif.event{background:#7c6af7;color:#fff}
 
-        /* Modal Editor */
-        #qModal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--card-bg); padding: 2rem; border-radius: 16px;
-            z-index: 100; width: 500px; border: 1px solid var(--accent);
-        }
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 90; }
+/* STATUS BAR */
+.status-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  padding:8px 16px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--muted);
+  font-family:'Space Mono',monospace;z-index:50;
+}
+.status-online{color:#4ade80}
+.status-offline{color:var(--danger)}
 
-        .hidden { display: none; }
-    </style>
+/* ANIM */
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.anim-in{animation:slideUp .3s ease forwards}
+</style>
 </head>
 <body>
 
-<nav>
-    <div class="logo">EDU GAME</div>
-    <input id="pass" type="password" placeholder="Admin Password">
-    <button onclick="toggleSection('editorSection')" class="btn-primary">Question Editor</button>
-    <button onclick="downloadJSON()">Export JSON</button>
-    <hr style="width:100%; border: 0.5px solid #1e293b">
-    <p style="font-size: 0.8rem; color: #64748b;">GAME CONTROLS</p>
-    <select id="mode">
-        <option value="maze">Maze Mode</option>
-        <option value="speed">Speed Quiz</option>
-        <option value="survival">Survival</option>
-    </select>
-    <button onclick="start()" class="btn-success">START SESSION</button>
-    <button onclick="end()" class="btn-danger">TERMINATE GAME</button>
-</nav>
-
-<main>
-    <div class="grid">
-        <div class="card">
-            <h3>Connected Students</h3>
-            <div id="players">
-                </div>
-        </div>
-
-        <div class="card">
-            <h3>Leaderboard</h3>
-            <div id="leaderboard">
-                </div>
-        </div>
-    </div>
-
-    <div id="editorSection" class="card hidden" style="margin-top: 2rem;">
-        <div style="display: flex; justify-content: space-between;">
-            <h3>Content Management</h3>
-            <button onclick="addQuestion()" style="width: auto;">+ New Question</button>
-        </div>
-        <div id="questionList"></div>
-        <button onclick="saveToConfig()" class="btn-primary" style="margin-top: 1rem;">Push to Server</button>
-    </div>
-</main>
-
-<div id="qModal" class="hidden">
-    <h3>Edit Challenge</h3>
-    <input id="qText" placeholder="Enter Question...">
-    <div id="ansList" style="margin-bottom: 1rem;"></div>
-    <button onclick="addAnswer()">+ Add Answer Option</button>
-    <button onclick="closeModal()" class="btn-success">Save Question</button>
+<!-- JOIN SCREEN -->
+<div class="screen active" id="joinScreen">
+  <div class="join-deco">
+    <div class="deco-circle" style="width:400px;height:400px;top:-150px;right:-150px"></div>
+    <div class="deco-circle" style="width:250px;height:250px;bottom:-50px;left:-80px"></div>
+  </div>
+  <div class="join-logo">// Edu Game</div>
+  <div class="join-title">Enter<br>The Arena</div>
+  <div class="join-sub">Pick a name and start playing</div>
+  <input class="join-input" id="nameInput" type="text" placeholder="Your name…" maxlength="15" autocomplete="off">
+  <button class="join-btn" onclick="joinGame()">Let's Go →</button>
 </div>
-<div id="overlay" class="overlay hidden" onclick="closeModal()"></div>
+
+<!-- WAITING SCREEN -->
+<div class="screen" id="waitScreen">
+  <div class="wait-icon">⏳</div>
+  <div class="wait-name" id="waitName">Hey!</div>
+  <div class="wait-msg">Waiting for the game to start<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></div>
+  <div style="margin-top:24px;font-size:12px;color:var(--muted);text-align:center;padding:0 40px">The admin will kick things off soon. Stay put!</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+
+  <div class="game-header" style="width:100%">
+    <span class="player-chip" id="headerName">Player</span>
+    <span class="progress-text" id="headerProgress">Q0/0</span>
+    <span class="score-badge" id="headerScore">0 pts</span>
+  </div>
+
+  <div class="timer-bar-wrap" style="width:100%">
+    <div class="timer-bar" id="timerBar"></div>
+  </div>
+
+  <!-- Q/A -->
+  <div id="qaArea" style="width:100%">
+    <div class="question-area">
+      <div class="q-number" id="qNum">QUESTION 1</div>
+      <div class="q-text" id="qText">Loading…</div>
+    </div>
+    <div class="options" id="optionList"></div>
+  </div>
+
+  <!-- MAZE -->
+  <div id="mazeWrap">
+    <canvas id="gameCanvas" width="288" height="288"></canvas>
+    <div class="dpad">
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="mazeMove(0,-1)">▲</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="mazeMove(-1,0)">◀</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="mazeMove(1,0)">▶</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="mazeMove(0,1)">▼</button>
+      <div class="dpad-empty"></div>
+    </div>
+  </div>
+
+  <!-- END / ELIMINATED -->
+  <div id="endArea" style="display:none;width:100%">
+    <div class="end-screen">
+      <div class="end-icon" id="endIcon">🏁</div>
+      <div class="end-title" id="endTitle">Done!</div>
+      <div class="end-sub" id="endSub">Wait for results</div>
+      <div class="score-display" id="endScore">0</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:-8px">points</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-bubble" id="resultBubble">✓ Correct!</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span class="status-online" id="statusDot">●</span>&nbsp;
+  <span id="statusText">Connecting…</span>
+</div>
 
 <script>
-    const socket = io("https://server.ctksystem.com");
-    let localQuestions = [];
-    let currentEditIdx = null;
+const SERVER = "https://server.ctksystem.com"
+const socket = io(SERVER)
+let myId = localStorage.getItem("edu_pid") || "p_"+Math.random().toString(36).substr(2,9)
+localStorage.setItem("edu_pid", myId)
 
-    function pass() { return document.getElementById("pass").value; }
+let myName = ""
+let gState = null
+let mazePos = {x:1,y:1}
+let timerInterval = null
+let answeredThisQ = false
+let eliminatedIdxs = []
+const TILE = 32
 
-    // --- EDITOR LOGIC ---
-    function toggleSection(id) {
-        const el = document.getElementById(id);
-        el.classList.toggle('hidden');
-    }
+// ======== SCREENS ========
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
 
-    function addQuestion() {
-        localQuestions.push({ question: "New Question", answers: [{text: "Correct", correct: true}] });
-        renderQuestionList();
-    }
+// ======== JOIN ========
+document.getElementById("nameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") joinGame() })
 
-    function renderQuestionList() {
-        const list = document.getElementById("questionList");
-        list.innerHTML = localQuestions.map((q, i) => `
-            <div class="q-item">
-                <strong>${i+1}. ${q.question}</strong> 
-                <button onclick="openEdit(${i})">Edit</button>
-                <button onclick="localQuestions.splice(${i},1);renderQuestionList()">Del</button>
-            </div>
-        `).join('');
-    }
+function joinGame(){
+  const name = document.getElementById("nameInput").value.trim()
+  if(!name){ document.getElementById("nameInput").focus(); return }
+  myName = name
+  document.getElementById("waitName").textContent = "Hey, "+name+"!"
+  document.getElementById("headerName").textContent = name
+  socket.emit("edu_join",{name,playerId:myId})
+  show("waitScreen")
+}
 
-    function openEdit(i) {
-        currentEditIdx = i;
-        const q = localQuestions[i];
-        document.getElementById("qText").value = q.question;
-        renderAnswers(q.answers);
-        document.getElementById("qModal").classList.remove('hidden');
-        document.getElementById("overlay").classList.remove('hidden');
-    }
+// ======== SOCKET EVENTS ========
+socket.on("connect",()=>{
+  document.getElementById("statusDot").className = "status-online"
+  document.getElementById("statusText").textContent = "Connected"
+  if(myName) socket.emit("edu_join",{name:myName,playerId:myId})
+})
 
-    function renderAnswers(answers) {
-        const div = document.getElementById("ansList");
-        div.innerHTML = answers.map((a, i) => `
-            <div>
-                <input value="${a.text}" onchange="updateAns(${i}, this.value)">
-                <input type="radio" name="correct" ${a.correct?'checked':''} onclick="setCorrect(${i})"> Correct
-            </div>
-        `).join('');
-    }
+socket.on("disconnect",()=>{
+  document.getElementById("statusDot").className = "status-offline"
+  document.getElementById("statusText").textContent = "Reconnecting…"
+})
 
-    function updateAns(i, val) { localQuestions[currentEditIdx].answers[i].text = val; }
-    function setCorrect(idx) {
-        localQuestions[currentEditIdx].answers.forEach((a, i) => a.correct = (i === idx));
-    }
-    function addAnswer() {
-        localQuestions[currentEditIdx].answers.push({text: "New Option", correct: false});
-        renderAnswers(localQuestions[currentEditIdx].answers);
-    }
-    function closeModal() {
-        localQuestions[currentEditIdx].question = document.getElementById("qText").value;
-        document.getElementById("qModal").classList.add('hidden');
-        document.getElementById("overlay").classList.add('hidden');
-        renderQuestionList();
-    }
+socket.on("edu_state", data=>{
+  gState = data
+  updateHeader(data.player)
+  if(!data.gameStarted){ show("waitScreen"); return }
+  enterGameMode(data)
+})
 
-    // --- API CALLS ---
-    async function saveToConfig() {
-        await fetch("https://server.ctksystem.com/edu/config", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ password: pass(), config: { maze: localQuestions, speed: localQuestions, survival: localQuestions } })
-        });
-        alert("Config Updated!");
-    }
+socket.on("edu_started",({gameType})=>{
+  if(gState) gState.gameType = gameType
+  show("gameScreen")
+  showNotif("Game started: "+gameType.toUpperCase(),"event")
+})
 
-    function downloadJSON() {
-        const blob = new Blob([JSON.stringify({maze: localQuestions}, null, 2)]);
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "quiz.json";
-        a.click();
-    }
+socket.on("edu_question",({question,answers,index,total})=>{
+  answeredThisQ = false
+  eliminatedIdxs = []
+  showQuestion(question, answers, index, total)
+})
 
-    async function start() {
-        await fetch("https://server.ctksystem.com/edu/start", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ password: pass(), gameType: document.getElementById("mode").value })
-        });
-    }
+socket.on("edu_reveal",({correctIndex})=>{
+  highlightCorrect(correctIndex)
+})
 
-    async function end() {
-        await fetch("https://server.ctksystem.com/edu/end", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ password: pass() })
-        });
-    }
+socket.on("edu_hint",({eliminateIndex})=>{
+  eliminatedIdxs.push(eliminateIndex)
+  const btns = document.querySelectorAll('.option-btn')
+  btns.forEach((b,i)=>{ if(i===eliminateIndex) b.classList.add("eliminated") })
+  showNotif("💡 Hint: one wrong answer eliminated","event")
+})
 
-    // Socket listeners for player list (same as before)
-    setInterval(() => socket.emit("edu_admin_players", pass()), 2000);
-    socket.on("edu_players", players => {
-        document.getElementById("players").innerHTML = players.map(p => `
-            <li>${p.name} - Score: ${p.score} ${p.alive ? '' : '[DEAD]'} 
-            <button onclick="socket.emit('edu_kick', {password:pass(), playerId:'${p.playerId}'})">Kick</button></li>
-        `).join('');
-    });
+socket.on("edu_timer",({endsAt,duration})=>{
+  startTimerBar(endsAt, duration)
+})
+
+socket.on("edu_broadcast",({message})=>{
+  showNotif("📢 "+message,"broadcast")
+})
+
+socket.on("edu_event_applied",({eventId})=>{
+  const names = {
+    double_points:"⚡ 2x Points active!",
+    freeze_top:"🧊 Leader frozen!",
+    random_score:"🎲 Scores shuffled!",
+    speed_bonus:"🚀 Speed bonus active!",
+    reveal_hint:"💡 Hint incoming!",
+    steal_points:"🗡️ Points stolen!",
+    bonus_question:"💰 3x Bonus Round!",
+    invert_scores:"🔄 Scores flipped!"
+  }
+  showNotif(names[eventId]||"Event fired","event")
+})
+
+socket.on("maze_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
+socket.on("speed_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
+socket.on("survival_result",({correct,alive,score,nextIndex})=>{
+  handleResult(correct,score,nextIndex)
+  if(!alive) showEliminated(score)
+})
+
+socket.on("edu_ended",()=>{
+  show("waitScreen")
+  document.getElementById("waitName").textContent = "Game Over!"
+  showNotif("Session ended by admin","event")
+})
+
+socket.on("kicked",()=>{
+  show("joinScreen")
+  showNotif("You were removed","")
+})
+
+socket.on("private_message",({message})=>{
+  showNotif("💬 "+message,"broadcast")
+})
+
+socket.on("edu_game_complete",()=>{
+  showFinished(gState?.player?.score||0)
+})
+
+// ======== GAME UI ========
+function updateHeader(player){
+  document.getElementById("headerScore").textContent = (player?.score||0)+" pts"
+}
+
+function enterGameMode(data){
+  const mode = data.gameType
+  const player = data.player
+  updateHeader(player)
+  show("gameScreen")
+
+  const qaArea = document.getElementById("qaArea")
+  const mazeWrap = document.getElementById("mazeWrap")
+  const endArea = document.getElementById("endArea")
+
+  endArea.style.display = "none"
+
+  if(!player.alive){
+    showEliminated(player.score)
+    return
+  }
+
+  if(mode==="maze"){
+    qaArea.style.display = "none"
+    mazeWrap.style.display = "flex"
+    const questions = data.config?.maze||[]
+    const q = questions[player.progress]
+    if(q){
+      document.getElementById("qText").textContent = q.question
+      drawMaze(null)
+    } else {
+      showFinished(player.score)
+    }
+  } else {
+    qaArea.style.display = "block"
+    mazeWrap.style.display = "none"
+    const questions = data.config?.[mode]||[]
+    const q = questions[player.progress]
+    if(q){
+      showQuestion(q.question, q.answers.map(a=>({text:a.text})), player.progress, questions.length)
+    } else {
+      showFinished(player.score)
+    }
+  }
+}
+
+function showQuestion(question, answers, index, total){
+  const qaArea = document.getElementById("qaArea")
+  const endArea = document.getElementById("endArea")
+  qaArea.style.display = "block"
+  endArea.style.display = "none"
+  document.getElementById("mazeWrap").style.display = "none"
+
+  document.getElementById("qNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
+  document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
+  document.getElementById("qText").textContent = question
+  document.getElementById("qText").classList.add("anim-in")
+
+  const letters = ["A","B","C","D","E","F"]
+  const optEl = document.getElementById("optionList")
+  optEl.innerHTML = answers.map((a,i)=>`
+    <button class="option-btn anim-in" id="opt_${i}" onclick="sendAnswer(${i})" style="animation-delay:${i*0.06}s">
+      <span class="option-letter">${letters[i]}</span>
+      ${a.text}
+    </button>
+  `).join('')
+  answeredThisQ = false
+  eliminatedIdxs = []
+}
+
+function sendAnswer(idx){
+  if(answeredThisQ) return
+  answeredThisQ = true
+
+  const mode = gState?.gameType||"maze"
+  const btn = document.getElementById("opt_"+idx)
+  if(btn) btn.classList.add("selected")
+  document.querySelectorAll('.option-btn').forEach(b=>b.style.pointerEvents="none")
+
+  const evMap = {maze:"maze_answer",speed:"speed_answer",survival:"survival_answer"}
+  socket.emit(evMap[mode]||"maze_answer",{playerId:myId,answerIndex:idx})
+}
+
+function handleResult(correct, score, nextIndex){
+  updateHeader({score})
+  showResultFeedback(correct)
+  setTimeout(()=>{
+    if(gState?.gameType==="maze"){ mazePos={x:1,y:1}; drawMaze(null) }
+  },1200)
+}
+
+function showResultFeedback(correct){
+  const overlay = document.getElementById("resultOverlay")
+  const bubble = document.getElementById("resultBubble")
+  bubble.textContent = correct ? "✓ Correct!" : "✗ Wrong"
+  bubble.className = "result-bubble "+(correct?"correct":"wrong")
+  overlay.classList.add("show")
+  setTimeout(()=>overlay.classList.remove("show"),1000)
+}
+
+function highlightCorrect(idx){
+  document.querySelectorAll('.option-btn').forEach((b,i)=>{
+    if(i===idx) b.classList.add("correct")
+    else if(b.classList.contains("selected")) b.classList.add("wrong")
+    else b.classList.add("eliminated")
+  })
+}
+
+function showEliminated(score){
+  document.getElementById("qaArea").style.display = "none"
+  document.getElementById("mazeWrap").style.display = "none"
+  document.getElementById("endArea").style.display = "block"
+  document.getElementById("endIcon").textContent = "💀"
+  document.getElementById("endTitle").textContent = "Eliminated!"
+  document.getElementById("endSub").textContent = "Watch the survivors finish"
+  document.getElementById("endScore").textContent = score
+}
+
+function showFinished(score){
+  document.getElementById("qaArea").style.display = "none"
+  document.getElementById("mazeWrap").style.display = "none"
+  document.getElementById("endArea").style.display = "block"
+  document.getElementById("endIcon").textContent = "🏆"
+  document.getElementById("endTitle").textContent = "Finished!"
+  document.getElementById("endSub").textContent = "All questions complete"
+  document.getElementById("endScore").textContent = score
+}
+
+// ======== MAZE ========
+function drawMaze(map){
+  if(!map && gState?.config?.maze){
+    const q = gState.config.maze[gState.player?.progress||0]
+    if(q) document.getElementById("qText").textContent = q.question
+  }
+
+  const canvas = document.getElementById("gameCanvas")
+  const ctx = canvas.getContext("2d")
+  const size = 9
+  const t = TILE
+
+  const mockMap = buildMockMaze()
+  ctx.clearRect(0,0,canvas.width,canvas.height)
+
+  mockMap.forEach((row,y)=>{
+    row.forEach((tile,x)=>{
+      if(tile===1){ ctx.fillStyle="#1c1c28" }
+      else if(['A','B','C'].includes(tile)){ ctx.fillStyle="#1a2500" }
+      else{ ctx.fillStyle="#0f0f1a" }
+      ctx.fillRect(x*t,y*t,t,t)
+
+      if(['A','B','C'].includes(tile)){
+        ctx.fillStyle="#c8f545"
+        ctx.font="bold 11px Space Mono"
+        ctx.textAlign="center"
+        ctx.fillText(tile,x*t+t/2,y*t+t/2+4)
+      }
+    })
+  })
+
+  ctx.fillStyle="#7c6af7"
+  ctx.beginPath()
+  ctx.roundRect(mazePos.x*t+6,mazePos.y*t+6,t-12,t-12,4)
+  ctx.fill()
+}
+
+function buildMockMaze(){
+  const m = Array(9).fill().map(()=>Array(9).fill(0))
+  for(let i=0;i<9;i++){ m[0][i]=m[8][i]=m[i][0]=m[i][8]=1 }
+  const walls=[[2,2],[2,3],[3,5],[4,2],[4,6],[5,3],[6,4],[6,5],[3,3]]
+  walls.forEach(([y,x])=>{ if(!(y===1&&x===1)) m[y][x]=1 })
+  const questions = gState?.config?.maze||[]
+  const count = Math.min(questions.length||3,3)
+  const labels=['A','B','C'].slice(0,count)
+  labels.forEach((l,i)=>{ m[2+i*2][7]=l })
+  return m
+}
+
+function mazeMove(dx,dy){
+  const map = buildMockMaze()
+  const nx=mazePos.x+dx, ny=mazePos.y+dy
+  if(map[ny]&&map[ny][nx]!==1){
+    mazePos={x:nx,y:ny}
+    const tile=map[ny][nx]
+    if(['A','B','C'].includes(tile)){
+      const idx=tile.charCodeAt(0)-65
+      sendAnswer(idx)
+      mazePos={x:1,y:1}
+    }
+    drawMaze(null)
+  }
+}
+
+// Swipe support for maze
+let touchStart=null
+document.getElementById("gameCanvas").addEventListener("touchstart",e=>{
+  touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY}
+},{passive:true})
+document.getElementById("gameCanvas").addEventListener("touchend",e=>{
+  if(!touchStart) return
+  const dx=e.changedTouches[0].clientX-touchStart.x
+  const dy=e.changedTouches[0].clientY-touchStart.y
+  if(Math.abs(dx)>Math.abs(dy)){ mazeMove(dx>0?1:-1,0) }
+  else{ mazeMove(0,dy>0?1:-1) }
+  touchStart=null
+},{passive:true})
+
+// ======== TIMER BAR ========
+function startTimerBar(endsAt, duration){
+  if(timerInterval) clearInterval(timerInterval)
+  const bar = document.getElementById("timerBar")
+  timerInterval = setInterval(()=>{
+    const remaining = endsAt - Date.now()
+    const pct = Math.max(0,(remaining/(duration*1000))*100)
+    bar.style.width = pct+"%"
+    bar.className = "timer-bar"+(pct<25?" danger":"")
+    if(pct<=0) clearInterval(timerInterval)
+  },200)
+}
+
+// ======== NOTIF ========
+function showNotif(msg, type){
+  const el = document.getElementById("notif")
+  el.textContent = msg
+  el.className = "notif "+(type||"")+" show"
+  setTimeout(()=>el.classList.remove("show"),3500)
+}
 </script>
 </body>
 </html>
