@@ -384,6 +384,14 @@ function show(id){
   document.getElementById(id).classList.add('active')
 }
 
+// ======== RESET ROUND STATE ========
+// Call this whenever a new question begins or a new game starts
+function resetRoundState(){
+  answeredThisQ = false
+  eliminatedIdxs = []
+  mazePos = {x:1,y:1}
+}
+
 // ======== JOIN ========
 document.getElementById("nameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") joinGame() })
 
@@ -401,6 +409,7 @@ function joinGame(){
 socket.on("connect",()=>{
   document.getElementById("statusDot").className = "status-online"
   document.getElementById("statusText").textContent = "Connected"
+  // Re-join on reconnect so we get our state back from the server
   if(myName) socket.emit("edu_join",{name:myName,playerId:myId})
 })
 
@@ -409,22 +418,55 @@ socket.on("disconnect",()=>{
   document.getElementById("statusText").textContent = "Reconnecting…"
 })
 
+// edu_state: full sync from server (on join/reconnect)
 socket.on("edu_state", data=>{
   gState = data
   updateHeader(data.player)
-  if(!data.gameStarted){ show("waitScreen"); return }
+
+  if(!data.gameStarted){
+    // Game not running yet — sit in wait screen
+    show("waitScreen")
+    if(myName){
+      document.getElementById("waitName").textContent = "Hey, "+myName+"!"
+    }
+    return
+  }
+
+  // Game is already in progress — jump straight in with correct state
+  resetRoundState()
   enterGameMode(data)
 })
 
-socket.on("edu_started",({gameType})=>{
-  if(gState) gState.gameType = gameType
+// edu_started: admin just kicked off a new session
+socket.on("edu_started", ({gameType})=>{
+  // Update local state with fresh game info
+  if(gState){
+    gState.gameType = gameType
+    // Reset player state to match server reset
+    if(gState.player){
+      gState.player.score = 0
+      gState.player.progress = 0
+      gState.player.alive = true
+    }
+  } else {
+    // gState not yet received (race condition) — build a minimal placeholder
+    gState = { gameType, player:{ score:0, progress:0, alive:true }, gameStarted:true, config:{} }
+  }
+
+  resetRoundState()
+  updateHeader(gState.player)
   show("gameScreen")
   showNotif("Game started: "+gameType.toUpperCase(),"event")
+
+  // Hide all sub-areas; the first edu_question event will populate them
+  document.getElementById("qaArea").style.display = "none"
+  document.getElementById("mazeWrap").style.display = "none"
+  document.getElementById("endArea").style.display = "none"
 })
 
 socket.on("edu_question",({question,answers,index,total})=>{
-  answeredThisQ = false
-  eliminatedIdxs = []
+  resetRoundState()
+  if(gState && gState.player) gState.player.progress = index
   showQuestion(question, answers, index, total)
 })
 
@@ -469,12 +511,15 @@ socket.on("survival_result",({correct,alive,score,nextIndex})=>{
 })
 
 socket.on("edu_ended",()=>{
+  gState = null
   show("waitScreen")
-  document.getElementById("waitName").textContent = "Game Over!"
+  document.getElementById("waitName").textContent = myName ? "Hey, "+myName+"!" : "Game Over!"
   showNotif("Session ended by admin","event")
 })
 
 socket.on("kicked",()=>{
+  gState = null
+  myName = ""
   show("joinScreen")
   showNotif("You were removed","")
 })
@@ -553,8 +598,6 @@ function showQuestion(question, answers, index, total){
       ${a.text}
     </button>
   `).join('')
-  answeredThisQ = false
-  eliminatedIdxs = []
 }
 
 function sendAnswer(idx){
@@ -571,11 +614,12 @@ function sendAnswer(idx){
 }
 
 function handleResult(correct, score, nextIndex){
+  if(gState?.player) gState.player.score = score
   updateHeader({score})
   showResultFeedback(correct)
-  setTimeout(()=>{
-    if(gState?.gameType==="maze"){ mazePos={x:1,y:1}; drawMaze(null) }
-  },1200)
+  if(gState?.gameType==="maze"){
+    setTimeout(()=>{ mazePos={x:1,y:1}; drawMaze(null) },1200)
+  }
 }
 
 function showResultFeedback(correct){
@@ -624,7 +668,6 @@ function drawMaze(map){
 
   const canvas = document.getElementById("gameCanvas")
   const ctx = canvas.getContext("2d")
-  const size = 9
   const t = TILE
 
   const mockMap = buildMockMaze()
