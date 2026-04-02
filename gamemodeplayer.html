@@ -187,6 +187,45 @@ body{
   padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;
   display:none;
 }
+.maze-head{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.maze-question{
+  font-size:18px;
+  font-weight:700;
+  line-height:1.35;
+}
+.maze-legend{
+  width:100%;
+  display:grid;
+  gap:8px;
+}
+.maze-answer{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.maze-answer-label{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--accent);
+  color:#0a0a0f;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;
+  font-size:12px;font-weight:700;
+  flex-shrink:0;
+}
+.maze-answer-text{
+  font-size:14px;
+  line-height:1.4;
+  color:var(--text);
+}
 #gameCanvas{
   border-radius:12px;
   border:1px solid var(--border);
@@ -323,6 +362,11 @@ body{
 
   <!-- MAZE -->
   <div id="mazeWrap">
+    <div class="maze-head">
+      <div class="q-number" id="mazeNum">QUESTION 1</div>
+      <div class="maze-question" id="mazeQuestion">Loading…</div>
+      <div class="maze-legend" id="mazeLegend"></div>
+    </div>
     <canvas id="gameCanvas" width="288" height="288"></canvas>
     <div class="dpad">
       <div class="dpad-empty"></div>
@@ -390,42 +434,6 @@ function resetRoundState(){
   answeredThisQ = false
   eliminatedIdxs = []
   mazePos = {x:1,y:1}
-  if(timerInterval){
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-  const timerBar = document.getElementById("timerBar")
-  timerBar.style.width = "100%"
-  timerBar.className = "timer-bar"
-}
-
-function normalizeAnswers(answers){
-  if(!Array.isArray(answers)) return []
-  return answers.map(a=>{
-    if(typeof a === "string") return {text:a}
-    if(a && typeof a.text === "string") return {text:a.text}
-    return {text:""}
-  })
-}
-
-function showMazeQuestion(question, index, total){
-  document.getElementById("qaArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "flex"
-  document.getElementById("endArea").style.display = "none"
-  document.getElementById("qNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
-  document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
-  document.getElementById("qText").textContent = question || "Get ready..."
-  drawMaze(null)
-}
-
-function showPendingRound(mode){
-  document.getElementById("qaArea").style.display = "block"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("endArea").style.display = "none"
-  document.getElementById("qNum").textContent = "GET READY"
-  document.getElementById("headerProgress").textContent = "Q0/0"
-  document.getElementById("qText").textContent = "Waiting for the next "+(mode||"game")+" round..."
-  document.getElementById("optionList").innerHTML = ""
 }
 
 // ======== JOIN ========
@@ -478,7 +486,6 @@ socket.on("edu_started", ({gameType})=>{
   // Update local state with fresh game info
   if(gState){
     gState.gameType = gameType
-    gState.gameStarted = true
     // Reset player state to match server reset
     if(gState.player){
       gState.player.score = 0
@@ -492,18 +499,20 @@ socket.on("edu_started", ({gameType})=>{
 
   resetRoundState()
   updateHeader(gState.player)
+  document.getElementById("headerProgress").textContent = "Q0/0"
+  show("gameScreen")
   showNotif("Game started: "+gameType.toUpperCase(),"event")
-  enterGameMode(gState)
+
+  // Hide all sub-areas; the first edu_question event will populate them
+  document.getElementById("qaArea").style.display = "none"
+  document.getElementById("mazeWrap").style.display = "none"
+  document.getElementById("endArea").style.display = "none"
 })
 
 socket.on("edu_question",({question,answers,index,total})=>{
   resetRoundState()
   if(gState && gState.player) gState.player.progress = index
-  if(gState?.gameType === "maze"){
-    showMazeQuestion(question, index, total)
-    return
-  }
-  showQuestion(question, normalizeAnswers(answers), index, total)
+  showQuestion(question, answers, index, total)
 })
 
 socket.on("edu_reveal",({correctIndex})=>{
@@ -575,7 +584,7 @@ function updateHeader(player){
 
 function enterGameMode(data){
   const mode = data.gameType
-  const player = data.player || {score:0, progress:0, alive:true}
+  const player = data.player
   updateHeader(player)
   show("gameScreen")
 
@@ -591,14 +600,15 @@ function enterGameMode(data){
   }
 
   if(mode==="maze"){
+    qaArea.style.display = "none"
+    mazeWrap.style.display = "flex"
     const questions = data.config?.maze||[]
     const q = questions[player.progress]
     if(q){
-      showMazeQuestion(q.question, player.progress, questions.length)
-    } else if(questions.length){
-      showFinished(player.score)
+      renderMazePrompt(q, player.progress, questions.length)
+      drawMaze(null)
     } else {
-      showPendingRound(mode)
+      showFinished(player.score)
     }
   } else {
     qaArea.style.display = "block"
@@ -606,17 +616,14 @@ function enterGameMode(data){
     const questions = data.config?.[mode]||[]
     const q = questions[player.progress]
     if(q){
-      showQuestion(q.question, normalizeAnswers(q.answers), player.progress, questions.length)
-    } else if(questions.length){
-      showFinished(player.score)
+      showQuestion(q.question, q.answers.map(a=>({text:a.text})), player.progress, questions.length)
     } else {
-      showPendingRound(mode)
+      showFinished(player.score)
     }
   }
 }
 
 function showQuestion(question, answers, index, total){
-  const safeAnswers = normalizeAnswers(answers)
   const qaArea = document.getElementById("qaArea")
   const endArea = document.getElementById("endArea")
   qaArea.style.display = "block"
@@ -630,11 +637,26 @@ function showQuestion(question, answers, index, total){
 
   const letters = ["A","B","C","D","E","F"]
   const optEl = document.getElementById("optionList")
-  optEl.innerHTML = safeAnswers.map((a,i)=>`
+  optEl.innerHTML = answers.map((a,i)=>`
     <button class="option-btn anim-in" id="opt_${i}" onclick="sendAnswer(${i})" style="animation-delay:${i*0.06}s">
       <span class="option-letter">${letters[i]}</span>
       ${a.text}
     </button>
+  `).join('')
+}
+
+function renderMazePrompt(questionData, index, total){
+  const q = questionData || {}
+  const answers = Array.isArray(q.answers) ? q.answers : []
+  const letters = ["A","B","C","D","E","F"]
+  document.getElementById("mazeNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
+  document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
+  document.getElementById("mazeQuestion").textContent = q.question || "Pick the right path"
+  document.getElementById("mazeLegend").innerHTML = answers.map((answer,i)=>`
+    <div class="maze-answer">
+      <span class="maze-answer-label">${letters[i]}</span>
+      <span class="maze-answer-text">${answer.text}</span>
+    </div>
   `).join('')
 }
 
@@ -701,7 +723,7 @@ function showFinished(score){
 function drawMaze(map){
   if(!map && gState?.config?.maze){
     const q = gState.config.maze[gState.player?.progress||0]
-    if(q) document.getElementById("qText").textContent = q.question
+    if(q) renderMazePrompt(q, gState.player?.progress||0, gState.config.maze.length)
   }
 
   const canvas = document.getElementById("gameCanvas")

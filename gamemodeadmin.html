@@ -298,6 +298,93 @@ textarea{resize:vertical;min-height:80px}
   animation:pulse 1s infinite;
 }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* PROJECTOR */
+.projector-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.projector-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  font-size:12px;
+  color:var(--muted);
+}
+.projector-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+}
+.projector-card{
+  background:linear-gradient(180deg,#171723 0%, #101018 100%);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  min-height:150px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.projector-card.top{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px #c8f54522 inset;
+}
+.projector-card.dead{
+  opacity:.6;
+}
+.projector-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.projector-name{
+  font-size:22px;
+  font-weight:800;
+  line-height:1.1;
+}
+.projector-rank{
+  font-family:'Space Mono',monospace;
+  font-size:12px;
+  color:var(--accent);
+}
+.projector-score{
+  font-family:'Space Mono',monospace;
+  font-size:28px;
+  font-weight:700;
+  color:var(--accent);
+}
+.projector-progress-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:12px;
+  color:var(--muted);
+}
+.projector-progress{
+  height:10px;
+  background:#0f0f1a;
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.projector-progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent) 0%, #f6ff91 100%);
+  border-radius:999px;
+  transition:width .35s ease;
+}
+.projector-empty{
+  color:var(--muted);
+  text-align:center;
+  padding:56px 0;
+  font-size:14px;
+}
 </style>
 </head>
 <body>
@@ -314,6 +401,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="tab active" onclick="switchTab('control')">Control</div>
   <div class="tab" onclick="switchTab('players')">Players</div>
   <div class="tab" onclick="switchTab('leaderboard')">Board</div>
+  <div class="tab" onclick="switchTab('projector')">Projector</div>
   <div class="tab" onclick="switchTab('events')">Events</div>
   <div class="tab" onclick="switchTab('questions')">Questions</div>
 </div>
@@ -369,6 +457,22 @@ textarea{resize:vertical;min-height:80px}
     <span style="font-size:12px;color:var(--muted)" id="lbUpdate"></span>
   </div>
   <div id="leaderboardList"></div>
+</div>
+
+<!-- PROJECTOR -->
+<div class="panel" id="panel-projector">
+  <div class="projector-toolbar">
+    <div>
+      <div class="live-badge"><span class="live-dot"></span> Projector Live</div>
+      <div class="projector-meta" style="margin-top:6px">
+        <span id="projectorMode">Mode: waiting</span>
+        <span id="projectorPlayers">0 players</span>
+        <span id="projectorUpdated">Updated --</span>
+      </div>
+    </div>
+    <button class="btn btn-surface btn-sm" onclick="toggleProjectorFullscreen()">Fullscreen</button>
+  </div>
+  <div id="projectorGrid" class="projector-grid"></div>
 </div>
 
 <!-- EVENTS -->
@@ -448,6 +552,8 @@ let currentEditIdx = null
 let pmTargetId = null
 let selectedMode = 'maze'
 let allPlayers = []
+let activeGameType = null
+let projectorQuestionCount = 0
 
 const EVENTS = [
   {id:"double_points",name:"2x Points",desc:"Next correct answer worth double",icon:"⚡",type:"boost"},
@@ -466,7 +572,7 @@ function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg
 // TABS
 function switchTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const panels=['control','players','leaderboard','events','questions']
+    const panels=['control','players','leaderboard','projector','events','questions']
     t.classList.toggle('active', panels[i]===name)
   })
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'))
@@ -499,7 +605,19 @@ socket.on("edu_players", players=>{
   allPlayers = players
   renderPlayers(players)
   renderLeaderboard(players)
+  renderProjector(players)
   document.getElementById("playerCount").textContent = players.filter(p=>!p.disconnected).length + " online"
+})
+
+socket.on("edu_started", ({gameType})=>{
+  activeGameType = gameType
+  projectorQuestionCount = localQuestions.length
+  renderProjector(allPlayers)
+})
+
+socket.on("edu_ended", ()=>{
+  activeGameType = null
+  renderProjector(allPlayers)
 })
 
 socket.on("edu_event_applied",({eventId})=>{
@@ -552,6 +670,55 @@ function renderLeaderboard(players){
     </div>
   `).join('')
   document.getElementById("lbUpdate").textContent = "Updated "+new Date().toLocaleTimeString()
+}
+
+function renderProjector(players){
+  const sorted = [...players].filter(p=>!p.disconnected).sort((a,b)=>b.score-a.score)
+  const totalQuestions = projectorQuestionCount || localQuestions.length || Math.max(...sorted.map(p=>p.progress), 0)
+  document.getElementById("projectorMode").textContent = "Mode: "+(activeGameType || "waiting")
+  document.getElementById("projectorPlayers").textContent = sorted.length+" players"
+  document.getElementById("projectorUpdated").textContent = "Updated "+new Date().toLocaleTimeString()
+
+  const grid = document.getElementById("projectorGrid")
+  if(!sorted.length){
+    grid.innerHTML = '<div class="projector-empty">No live players yet</div>'
+    return
+  }
+
+  grid.innerHTML = sorted.map((p,i)=>{
+    const progressRatio = totalQuestions ? Math.min(100, (p.progress/totalQuestions)*100) : 0
+    const status = p.alive ? "Active" : "Eliminated"
+    return `
+      <div class="projector-card ${i===0?'top':''} ${!p.alive?'dead':''}">
+        <div class="projector-card-head">
+          <div>
+            <div class="projector-rank">#${i+1}</div>
+            <div class="projector-name">${p.name}</div>
+          </div>
+          <span class="badge ${p.alive?'badge-alive':'badge-dead'}">${status}</span>
+        </div>
+        <div class="projector-score">${p.score} pts</div>
+        <div>
+          <div class="projector-progress-label">
+            <span>Progress</span>
+            <span>Q${p.progress}${totalQuestions?'/'+totalQuestions:''}</span>
+          </div>
+          <div class="projector-progress">
+            <div class="projector-progress-fill" style="width:${progressRatio}%"></div>
+          </div>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+function toggleProjectorFullscreen(){
+  const panel = document.getElementById("panel-projector")
+  if(document.fullscreenElement){
+    document.exitFullscreen()
+    return
+  }
+  panel.requestFullscreen?.()
 }
 
 // EVENTS
@@ -731,7 +898,9 @@ function applyJSON(data){
   else if(data.speed) localQuestions = data.speed
   else if(data.survival) localQuestions = data.survival
   else { toast("Unrecognised format"); return }
+  projectorQuestionCount = localQuestions.length
   renderQuestionList()
+  renderProjector(allPlayers)
   toast(`Loaded ${localQuestions.length} questions`)
 }
 
@@ -753,6 +922,7 @@ function exportJSON(){
 }
 
 renderEvents()
+renderProjector([])
 </script>
 </body>
 </html>
