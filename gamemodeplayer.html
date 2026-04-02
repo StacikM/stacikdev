@@ -390,6 +390,32 @@ function resetRoundState(){
   answeredThisQ = false
   eliminatedIdxs = []
   mazePos = {x:1,y:1}
+  if(timerInterval){
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  const timerBar = document.getElementById("timerBar")
+  timerBar.style.width = "100%"
+  timerBar.className = "timer-bar"
+}
+
+function normalizeAnswers(answers){
+  if(!Array.isArray(answers)) return []
+  return answers.map(a=>{
+    if(typeof a === "string") return {text:a}
+    if(a && typeof a.text === "string") return {text:a.text}
+    return {text:""}
+  })
+}
+
+function showMazeQuestion(question, index, total){
+  document.getElementById("qaArea").style.display = "none"
+  document.getElementById("mazeWrap").style.display = "flex"
+  document.getElementById("endArea").style.display = "none"
+  document.getElementById("qNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
+  document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
+  document.getElementById("qText").textContent = question || "Get ready..."
+  drawMaze(null)
 }
 
 // ======== JOIN ========
@@ -442,6 +468,7 @@ socket.on("edu_started", ({gameType})=>{
   // Update local state with fresh game info
   if(gState){
     gState.gameType = gameType
+    gState.gameStarted = true
     // Reset player state to match server reset
     if(gState.player){
       gState.player.score = 0
@@ -455,6 +482,7 @@ socket.on("edu_started", ({gameType})=>{
 
   resetRoundState()
   updateHeader(gState.player)
+  document.getElementById("headerProgress").textContent = "Q0/0"
   show("gameScreen")
   showNotif("Game started: "+gameType.toUpperCase(),"event")
 
@@ -467,7 +495,11 @@ socket.on("edu_started", ({gameType})=>{
 socket.on("edu_question",({question,answers,index,total})=>{
   resetRoundState()
   if(gState && gState.player) gState.player.progress = index
-  showQuestion(question, answers, index, total)
+  if(gState?.gameType === "maze"){
+    showMazeQuestion(question, index, total)
+    return
+  }
+  showQuestion(question, normalizeAnswers(answers), index, total)
 })
 
 socket.on("edu_reveal",({correctIndex})=>{
@@ -555,13 +587,10 @@ function enterGameMode(data){
   }
 
   if(mode==="maze"){
-    qaArea.style.display = "none"
-    mazeWrap.style.display = "flex"
     const questions = data.config?.maze||[]
     const q = questions[player.progress]
     if(q){
-      document.getElementById("qText").textContent = q.question
-      drawMaze(null)
+      showMazeQuestion(q.question, player.progress, questions.length)
     } else {
       showFinished(player.score)
     }
@@ -571,7 +600,7 @@ function enterGameMode(data){
     const questions = data.config?.[mode]||[]
     const q = questions[player.progress]
     if(q){
-      showQuestion(q.question, q.answers.map(a=>({text:a.text})), player.progress, questions.length)
+      showQuestion(q.question, normalizeAnswers(q.answers), player.progress, questions.length)
     } else {
       showFinished(player.score)
     }
@@ -579,6 +608,7 @@ function enterGameMode(data){
 }
 
 function showQuestion(question, answers, index, total){
+  const safeAnswers = normalizeAnswers(answers)
   const qaArea = document.getElementById("qaArea")
   const endArea = document.getElementById("endArea")
   qaArea.style.display = "block"
@@ -592,7 +622,7 @@ function showQuestion(question, answers, index, total){
 
   const letters = ["A","B","C","D","E","F"]
   const optEl = document.getElementById("optionList")
-  optEl.innerHTML = answers.map((a,i)=>`
+  optEl.innerHTML = safeAnswers.map((a,i)=>`
     <button class="option-btn anim-in" id="opt_${i}" onclick="sendAnswer(${i})" style="animation-delay:${i*0.06}s">
       <span class="option-letter">${letters[i]}</span>
       ${a.text}
