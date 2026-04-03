@@ -378,7 +378,7 @@ body{
       <div class="q-number" id="mazeNum">QUESTION 1</div>
       <div class="maze-question" id="mazeQuestion">Loading…</div>
     </div>
-    <canvas id="gameCanvas" width="288" height="288"></canvas>
+    <canvas id="gameCanvas" width="352" height="352"></canvas>
     <div class="dpad">
       <div class="dpad-empty"></div>
       <button class="dpad-btn" onclick="mazeMove(0,-1)">▲</button>
@@ -777,16 +777,18 @@ function drawMaze(map){
   const t = TILE
 
   const mockMap = buildMockMaze()
+  canvas.width = mockMap[0].length * t
+  canvas.height = mockMap.length * t
   ctx.clearRect(0,0,canvas.width,canvas.height)
 
   mockMap.forEach((row,y)=>{
     row.forEach((tile,x)=>{
       if(tile===1){ ctx.fillStyle="#1c1c28" }
-      else if(['A','B','C'].includes(tile)){ ctx.fillStyle="#1a2500" }
+      else if(/[A-F]/.test(tile)){ ctx.fillStyle="#1a2500" }
       else{ ctx.fillStyle="#0f0f1a" }
       ctx.fillRect(x*t,y*t,t,t)
 
-      if(['A','B','C'].includes(tile)){
+      if(/[A-F]/.test(tile)){
         ctx.fillStyle="#c8f545"
         ctx.font="bold 11px Space Mono"
         ctx.textAlign="center"
@@ -802,13 +804,21 @@ function drawMaze(map){
 }
 
 function buildMockMaze(){
-  const m = Array(9).fill().map(()=>Array(9).fill(0))
-  for(let i=0;i<9;i++){ m[0][i]=m[8][i]=m[i][0]=m[i][8]=1 }
-  const walls=[[2,2],[2,3],[3,5],[4,2],[4,6],[5,3],[6,4],[6,5],[3,3]]
+  const size = 11
+  const m = Array(size).fill().map(()=>Array(size).fill(0))
+  for(let i=0;i<size;i++){ m[0][i]=m[size-1][i]=m[i][0]=m[i][size-1]=1 }
+  const walls=[[2,2],[2,3],[2,6],[3,5],[4,2],[4,7],[5,3],[5,6],[6,4],[6,7],[7,2],[7,5],[8,3],[8,6],[3,3]]
   walls.forEach(([y,x])=>{ if(!(y===1&&x===1)) m[y][x]=1 })
-  const count = Math.min(mazeRoundAnswers.length||3,3)
-  const labels=['A','B','C'].slice(0,count)
-  labels.forEach((l,i)=>{ m[2+i*2][7]=l })
+  const count = Math.min(mazeRoundAnswers.length||3,6)
+  const labels=['A','B','C','D','E','F'].slice(0,count)
+  const targetSpots = [
+    [2,9],[4,9],[6,9],[8,9],
+    [9,3],[9,5]
+  ]
+  labels.forEach((l,i)=>{
+    const [y,x] = targetSpots[i]
+    m[y][x] = l
+  })
   return m
 }
 
@@ -818,7 +828,7 @@ function mazeMove(dx,dy){
   if(map[ny]&&map[ny][nx]!==1){
     mazePos={x:nx,y:ny}
     const tile=map[ny][nx]
-    if(['A','B','C'].includes(tile)){
+    if(/[A-F]/.test(tile)){
       const labelIndex = tile.charCodeAt(0)-65
       const idx = mazeRoundAnswers[labelIndex]?.originalIndex
       if(idx === undefined) return
