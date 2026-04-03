@@ -212,13 +212,14 @@ body{
 }
 .maze-answer{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   gap:8px;
   padding:6px 9px;
   background:#11111a;
   border:1px solid var(--border);
-  border-radius:999px;
+  border-radius:16px;
   min-width:0;
+  max-width:calc(50% - 8px);
 }
 .maze-answer-label{
   width:22px;height:22px;border-radius:50%;
@@ -233,10 +234,11 @@ body{
   font-size:12px;
   line-height:1.2;
   color:var(--text);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:84px;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:break-word;
+  max-width:100%;
 }
 #gameCanvas{
   border-radius:12px;
