@@ -435,6 +435,7 @@ let timerInterval = null
 let answeredThisQ = false
 let eliminatedIdxs = []
 let mazeRoundAnswers = []
+let roundAnswers = []
 const TILE = 32
 
 // ======== SCREENS ========
@@ -450,6 +451,7 @@ function resetRoundState(){
   eliminatedIdxs = []
   mazePos = {x:1,y:1}
   mazeRoundAnswers = []
+  roundAnswers = []
 }
 
 function shuffle(arr){
@@ -468,6 +470,19 @@ function ensureMazeRoundAnswers(answers){
     text: answer?.text || ""
   })))
   return mazeRoundAnswers
+}
+
+function ensureRoundAnswers(answers){
+  if(roundAnswers.length === answers.length && answers.length) return roundAnswers
+  roundAnswers = shuffle((answers || []).map((answer, originalIndex)=>({
+    originalIndex,
+    text: answer?.text || ""
+  })))
+  return roundAnswers
+}
+
+function getDisplayedAnswerIndex(originalIndex){
+  return roundAnswers.findIndex(answer=>answer.originalIndex===originalIndex)
 }
 
 // ======== JOIN ========
@@ -546,6 +561,10 @@ socket.on("edu_started", ({gameType})=>{
 
 socket.on("edu_question",({question,answers,index,total})=>{
   resetRoundState()
+  if(gState?.gameType === "survival" && gState?.player && gState.player.alive === false){
+    showEliminated(gState.player.score || 0)
+    return
+  }
   if(gState && gState.player) gState.player.progress = index
   if(gState?.gameType === "maze"){
     const mazeQuestion = {
@@ -563,13 +582,15 @@ socket.on("edu_question",({question,answers,index,total})=>{
 })
 
 socket.on("edu_reveal",({correctIndex})=>{
-  highlightCorrect(correctIndex)
+  const shownIndex = gState?.gameType === "maze" ? correctIndex : getDisplayedAnswerIndex(correctIndex)
+  highlightCorrect(shownIndex >= 0 ? shownIndex : correctIndex)
 })
 
 socket.on("edu_hint",({eliminateIndex})=>{
-  eliminatedIdxs.push(eliminateIndex)
+  const shownIndex = gState?.gameType === "maze" ? eliminateIndex : getDisplayedAnswerIndex(eliminateIndex)
+  eliminatedIdxs.push(shownIndex)
   const btns = document.querySelectorAll('.option-btn')
-  btns.forEach((b,i)=>{ if(i===eliminateIndex) b.classList.add("eliminated") })
+  btns.forEach((b,i)=>{ if(i===shownIndex) b.classList.add("eliminated") })
   showNotif("💡 Hint: one wrong answer eliminated","event")
 })
 
@@ -598,6 +619,7 @@ socket.on("edu_event_applied",({eventId})=>{
 socket.on("maze_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
 socket.on("speed_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
 socket.on("survival_result",({correct,alive,score,nextIndex})=>{
+  if(gState?.player) gState.player.alive = alive
   handleResult(correct,score,nextIndex)
   if(!alive) showEliminated(score)
 })
@@ -671,6 +693,7 @@ function enterGameMode(data){
 }
 
 function showQuestion(question, answers, index, total){
+  const shuffledAnswers = ensureRoundAnswers(answers)
   const qaArea = document.getElementById("qaArea")
   const endArea = document.getElementById("endArea")
   qaArea.style.display = "block"
@@ -684,7 +707,7 @@ function showQuestion(question, answers, index, total){
 
   const letters = ["A","B","C","D","E","F"]
   const optEl = document.getElementById("optionList")
-  optEl.innerHTML = answers.map((a,i)=>`
+  optEl.innerHTML = shuffledAnswers.map((a,i)=>`
     <button class="option-btn anim-in" id="opt_${i}" onclick="sendAnswer(${i})" style="animation-delay:${i*0.06}s">
       <span class="option-letter">${letters[i]}</span>
       ${a.text}
@@ -713,16 +736,20 @@ function sendAnswer(idx){
   answeredThisQ = true
 
   const mode = gState?.gameType||"maze"
+  const answerIndex = mode === "maze" ? idx : (roundAnswers[idx]?.originalIndex ?? idx)
   const btn = document.getElementById("opt_"+idx)
   if(btn) btn.classList.add("selected")
   document.querySelectorAll('.option-btn').forEach(b=>b.style.pointerEvents="none")
 
   const evMap = {maze:"maze_answer",speed:"speed_answer",survival:"survival_answer"}
-  socket.emit(evMap[mode]||"maze_answer",{playerId:myId,answerIndex:idx})
+  socket.emit(evMap[mode]||"maze_answer",{playerId:myId,answerIndex})
 }
 
 function handleResult(correct, score, nextIndex){
-  if(gState?.player) gState.player.score = score
+  if(gState?.player){
+    gState.player.score = score
+    if(typeof nextIndex === "number") gState.player.progress = nextIndex
+  }
   updateHeader({score})
   showResultFeedback(correct)
   if(gState?.gameType==="maze"){
