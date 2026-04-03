@@ -428,6 +428,7 @@ let mazePos = {x:1,y:1}
 let timerInterval = null
 let answeredThisQ = false
 let eliminatedIdxs = []
+let mazeRoundKey = []
 const TILE = 32
 
 // ======== SCREENS ========
@@ -442,6 +443,22 @@ function resetRoundState(){
   answeredThisQ = false
   eliminatedIdxs = []
   mazePos = {x:1,y:1}
+  mazeRoundKey = []
+}
+
+function shuffle(arr){
+  const copy = [...arr]
+  for(let i=copy.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1))
+    ;[copy[i],copy[j]] = [copy[j],copy[i]]
+  }
+  return copy
+}
+
+function ensureMazeRoundKey(answerCount){
+  if(mazeRoundKey.length === answerCount && answerCount) return mazeRoundKey
+  mazeRoundKey = shuffle(Array.from({length:answerCount}, (_,i)=>i))
+  return mazeRoundKey
 }
 
 // ======== JOIN ========
@@ -494,6 +511,7 @@ socket.on("edu_started", ({gameType})=>{
   // Update local state with fresh game info
   if(gState){
     gState.gameType = gameType
+    gState.gameStarted = true
     // Reset player state to match server reset
     if(gState.player){
       gState.player.score = 0
@@ -520,6 +538,18 @@ socket.on("edu_started", ({gameType})=>{
 socket.on("edu_question",({question,answers,index,total})=>{
   resetRoundState()
   if(gState && gState.player) gState.player.progress = index
+  if(gState?.gameType === "maze"){
+    const mazeQuestion = {
+      question,
+      answers: Array.isArray(answers) ? answers : []
+    }
+    renderMazePrompt(mazeQuestion, index, total)
+    document.getElementById("qaArea").style.display = "none"
+    document.getElementById("mazeWrap").style.display = "flex"
+    document.getElementById("endArea").style.display = "none"
+    drawMaze(null)
+    return
+  }
   showQuestion(question, answers, index, total)
 })
 
@@ -657,13 +687,14 @@ function renderMazePrompt(questionData, index, total){
   const q = questionData || {}
   const answers = Array.isArray(q.answers) ? q.answers : []
   const letters = ["A","B","C","D","E","F"]
+  const key = ensureMazeRoundKey(answers.length)
   document.getElementById("mazeNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
   document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
   document.getElementById("mazeQuestion").textContent = q.question || "Pick the right path"
-  document.getElementById("mazeLegend").innerHTML = answers.map((answer,i)=>`
+  document.getElementById("mazeLegend").innerHTML = key.map((answerIdx,i)=>`
     <div class="maze-answer">
       <span class="maze-answer-label">${letters[i]}</span>
-      <span class="maze-answer-text" title="${answer.text}">${answer.text}</span>
+      <span class="maze-answer-text" title="${answers[answerIdx]?.text||''}">${answers[answerIdx]?.text||''}</span>
     </div>
   `).join('')
 }
@@ -768,8 +799,7 @@ function buildMockMaze(){
   for(let i=0;i<9;i++){ m[0][i]=m[8][i]=m[i][0]=m[i][8]=1 }
   const walls=[[2,2],[2,3],[3,5],[4,2],[4,6],[5,3],[6,4],[6,5],[3,3]]
   walls.forEach(([y,x])=>{ if(!(y===1&&x===1)) m[y][x]=1 })
-  const questions = gState?.config?.maze||[]
-  const count = Math.min(questions.length||3,3)
+  const count = Math.min(mazeRoundKey.length||3,3)
   const labels=['A','B','C'].slice(0,count)
   labels.forEach((l,i)=>{ m[2+i*2][7]=l })
   return m
@@ -782,7 +812,8 @@ function mazeMove(dx,dy){
     mazePos={x:nx,y:ny}
     const tile=map[ny][nx]
     if(['A','B','C'].includes(tile)){
-      const idx=tile.charCodeAt(0)-65
+      const labelIndex = tile.charCodeAt(0)-65
+      const idx = mazeRoundKey[labelIndex]
       sendAnswer(idx)
       mazePos={x:1,y:1}
     }
