@@ -733,6 +733,10 @@ function renderMazePrompt(questionData, index, total){
 
 function sendAnswer(idx){
   if(answeredThisQ) return
+  if(gState?.gameType === "survival" && gState?.player?.alive === false){
+    showEliminated(gState.player.score || 0)
+    return
+  }
   answeredThisQ = true
 
   const mode = gState?.gameType||"maze"
@@ -775,6 +779,9 @@ function highlightCorrect(idx){
 }
 
 function showEliminated(score){
+  show("gameScreen")
+  answeredThisQ = true
+  document.querySelectorAll('.option-btn').forEach(b=>b.style.pointerEvents="none")
   document.getElementById("qaArea").style.display = "none"
   document.getElementById("mazeWrap").style.display = "none"
   document.getElementById("endArea").style.display = "block"
