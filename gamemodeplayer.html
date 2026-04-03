@@ -198,6 +198,10 @@ body{
   font-weight:700;
   line-height:1.35;
   text-align:center;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:break-word;
 }
 .maze-legend{
   width:100%;
@@ -428,7 +432,7 @@ let mazePos = {x:1,y:1}
 let timerInterval = null
 let answeredThisQ = false
 let eliminatedIdxs = []
-let mazeRoundKey = []
+let mazeRoundAnswers = []
 const TILE = 32
 
 // ======== SCREENS ========
@@ -443,7 +447,7 @@ function resetRoundState(){
   answeredThisQ = false
   eliminatedIdxs = []
   mazePos = {x:1,y:1}
-  mazeRoundKey = []
+  mazeRoundAnswers = []
 }
 
 function shuffle(arr){
@@ -455,10 +459,13 @@ function shuffle(arr){
   return copy
 }
 
-function ensureMazeRoundKey(answerCount){
-  if(mazeRoundKey.length === answerCount && answerCount) return mazeRoundKey
-  mazeRoundKey = shuffle(Array.from({length:answerCount}, (_,i)=>i))
-  return mazeRoundKey
+function ensureMazeRoundAnswers(answers){
+  if(mazeRoundAnswers.length === answers.length && answers.length) return mazeRoundAnswers
+  mazeRoundAnswers = shuffle(answers.map((answer, originalIndex)=>({
+    originalIndex,
+    text: answer?.text || ""
+  })))
+  return mazeRoundAnswers
 }
 
 // ======== JOIN ========
@@ -687,14 +694,14 @@ function renderMazePrompt(questionData, index, total){
   const q = questionData || {}
   const answers = Array.isArray(q.answers) ? q.answers : []
   const letters = ["A","B","C","D","E","F"]
-  const key = ensureMazeRoundKey(answers.length)
+  const shuffledAnswers = ensureMazeRoundAnswers(answers)
   document.getElementById("mazeNum").textContent = "QUESTION "+(index+1)+(total?" / "+total:"")
   document.getElementById("headerProgress").textContent = "Q"+(index+1)+(total?"/"+total:"")
   document.getElementById("mazeQuestion").textContent = q.question || "Pick the right path"
-  document.getElementById("mazeLegend").innerHTML = key.map((answerIdx,i)=>`
+  document.getElementById("mazeLegend").innerHTML = shuffledAnswers.map((answer,i)=>`
     <div class="maze-answer">
       <span class="maze-answer-label">${letters[i]}</span>
-      <span class="maze-answer-text" title="${answers[answerIdx]?.text||''}">${answers[answerIdx]?.text||''}</span>
+      <span class="maze-answer-text" title="${answer.text}">${answer.text}</span>
     </div>
   `).join('')
 }
@@ -799,7 +806,7 @@ function buildMockMaze(){
   for(let i=0;i<9;i++){ m[0][i]=m[8][i]=m[i][0]=m[i][8]=1 }
   const walls=[[2,2],[2,3],[3,5],[4,2],[4,6],[5,3],[6,4],[6,5],[3,3]]
   walls.forEach(([y,x])=>{ if(!(y===1&&x===1)) m[y][x]=1 })
-  const count = Math.min(mazeRoundKey.length||3,3)
+  const count = Math.min(mazeRoundAnswers.length||3,3)
   const labels=['A','B','C'].slice(0,count)
   labels.forEach((l,i)=>{ m[2+i*2][7]=l })
   return m
@@ -813,7 +820,8 @@ function mazeMove(dx,dy){
     const tile=map[ny][nx]
     if(['A','B','C'].includes(tile)){
       const labelIndex = tile.charCodeAt(0)-65
-      const idx = mazeRoundKey[labelIndex]
+      const idx = mazeRoundAnswers[labelIndex]?.originalIndex
+      if(idx === undefined) return
       sendAnswer(idx)
       mazePos={x:1,y:1}
     }
