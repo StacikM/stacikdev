@@ -543,7 +543,7 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <div class="toast" id="toast"></div>
-
+<script src="crash.js"></script>
 <script>
 const SERVER = "https://server.ctksystem.com"
 const socket = io(SERVER)
@@ -911,7 +911,11 @@ async function pushConfig(){
     body:JSON.stringify({password:pass(),config:{maze:localQuestions,speed:localQuestions,survival:localQuestions}})
   })
   if(r.ok) toast("Config pushed!")
-  else toast("Auth failed")
+  else CTKCrash.trigger("Failed to push config", {
+  source: "gamemodeadmin.html",
+  retry: "gamemodeadmin.html",
+  fallbackPage: "ohno.html"
+});
 }
 
 function exportJSON(){

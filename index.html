@@ -4,40 +4,261 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StacikDev</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --bg: #14051f;
+            --surface: #1f0b2e;
+            --surface-soft: #27123a;
+            --text: #f3e9ff;
+            --muted: #c6b2dd;
+            --primary: #b980ff;
+            --primary-strong: #d8b2ff;
+            --line: rgba(196, 140, 255, 0.28);
+            --shadow: 0 22px 45px rgba(8, 2, 16, 0.48);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at 12% 10%, rgba(180, 118, 255, 0.34), transparent 44%),
+                radial-gradient(circle at 86% 88%, rgba(111, 44, 185, 0.34), transparent 48%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.55;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--primary-strong);
+            text-decoration: underline;
+        }
+
+        .page {
+            width: min(1060px, 92vw);
+            margin: 42px auto;
+            display: grid;
+            gap: 24px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .hero {
+            padding: clamp(24px, 6vw, 52px);
+            display: grid;
+            gap: 18px;
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: -30% auto auto -12%;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(192, 134, 255, 0.25), transparent 68%);
+            z-index: -1;
+            animation: drift 8s ease-in-out infinite alternate;
+        }
+
+        .eyebrow {
+            color: var(--primary);
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+            font-weight: 800;
+            font-size: 0.78rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.1;
+        }
+
+        .roles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .tag {
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            color: #e4d4f7;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.92rem;
+            font-weight: 650;
+        }
+
+        .intro {
+            max-width: 74ch;
+            color: var(--muted);
+            font-size: 1.04rem;
+        }
+
+        .main {
+            display: grid;
+            gap: 24px;
+            grid-template-columns: 1.7fr 1fr;
+            align-items: start;
+        }
+
+        .projects,
+        .contact {
+            padding: 30px;
+        }
+
+        h2 {
+            font-size: 1.42rem;
+            margin-bottom: 14px;
+        }
+
+        .section-copy {
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .project-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .project {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            background: var(--surface-soft);
+        }
+
+        .project h3 {
+            font-size: 1.06rem;
+            margin-bottom: 8px;
+        }
+
+        .project p {
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .profiles {
+            list-style: none;
+            display: grid;
+            gap: 9px;
+            margin: 6px 0 22px;
+        }
+
+        .profiles li {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+        }
+
+        .contact p {
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--muted);
+            padding: 8px 0 18px;
+            font-size: 0.92rem;
+        }
+
+        .panel,
+        .project,
+        .profiles li {
+            backdrop-filter: blur(2px);
+        }
+
+        @keyframes drift {
+            from {
+                transform: translateY(0) scale(0.96);
+            }
+            to {
+                transform: translateY(10px) scale(1.04);
+            }
+        }
+
+        @media (max-width: 860px) {
+            .page {
+                margin: 24px auto;
+            }
+
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .projects,
+            .contact {
+                padding: 22px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Stacik (aka Stanislas)</h1>
-        <h2>game developer</h2>
-        <h2>backend & frontend dev</h2>
+    <main class="page">
+        <section class="panel hero">
+            <p class="eyebrow">Personal Portfolio</p>
+            <h1>Stacik (aka Stanislas)</h1>
+            <div class="roles">
+                <span class="tag">Game Developer</span>
+                <span class="tag">Backend & Frontend Developer</span>
+            </div>
+            <p class="intro">Welcome to my personal website. I build interactive products, game experiences, and practical web tools. Here you can quickly explore my projects, follow my game-dev work, and reach out for collaboration.</p>
+        </section>
 
-        <div class="content">
-            <p>Welcome to my personal website! Here you'll find information about my projects, blog posts, and contact details. Feel free to explore and reach out if you'd like to collaborate or learn more about my work.</p>
+        <section class="main">
+            <article class="panel projects">
+                <h2>Featured Projects</h2>
+                <p class="section-copy">A few projects I’m actively building and maintaining.</p>
+                <div class="project-list">
+                    <div class="project">
+                        <h3><a href="https://ctksystem.com">CTK</a></h3>
+                        <p>CTK is a development service where we create games and software for clients using multiple technologies, from Lua to Python and JavaScript.</p>
+                    </div>
+                    <div class="project">
+                        <h3><a href="https://games.ctksystem.com">CTK Games</a></h3>
+                        <p>A launcher project built with my friend <a href="https://itch.io/profile/blev-dev">Blev</a> to deliver and manage complete gaming experiences.</p>
+                    </div>
+                </div>
+            </article>
 
-            <h3>Projects</h3>
-            <h4><a href="https://ctksystem.com">CTK</a></h4>
-            <p>CTK is a service, where we build games, or projects for people in different languages ranging from Lua, to Python, JS and more!</p>
+            <aside class="panel contact">
+                <h2>Profiles & Contact</h2>
+                <ul class="profiles">
+                    <li><a href="https://gamejolt.com/@Stacik">GameJolt</a> (mostly non-serious projects)</li>
+                    <li><a href="https://play.google.com/store/apps/developer?id=CTK+Games">Google Play Developer Page</a></li>
+                </ul>
+                <p>Email: <a href="mailto:stacik@ctksystem.com">stacik@ctksystem.com</a></p>
+                <p>Alt email: <a href="mailto:admin@stacik.dev">admin@stacik.dev</a></p>
+                <p>Discord: <strong>stacik_</strong></p>
+            </aside>
+        </section>
 
-            <h4><a href="https://games.ctksystem.com">CTK Games</a></h4>
-            <p>A project that I built with one of my best friends, <a href="https://itch.io/profile/blev-dev">Blev</a>, to create a full gaming launcher.</p>
-
-            <h3>Gamedev Profiles</h3>
-            <ul>
-                <li><a href="https://gamejolt.com/@Stacik">GameJolt (Mostly non serious projects)</a></li>
-                <li><a href="https://play.google.com/store/apps/developer?id=CTK+Games">PlayStore</a></li>
-            </ul>
-
-            <h3>Contact me</h3>
-            <p>If you'd like to get in touch, you can reach me via email at: <a href="mailto:stacik@ctksystem.com">stacik@ctksystem.com</a></p>
-            <p>or my personal Discord account: stacik_</p>
-        </div>
-    </div>
-
-    <footer>
-        <p>© 2025 Stacik.dev All rights reserved.</p>
-    </footer>
+        <footer>
+            <p>&copy; 2026 Stacik.dev. All rights reserved.</p>
+        </footer>
+    </main>
 </body>
-
 </html>
-
