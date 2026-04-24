@@ -438,6 +438,36 @@ let mazeRoundAnswers = []
 let roundAnswers = []
 const TILE = 32
 
+let awayNotified = false;
+
+function notifyAway(reason) {
+  if (!myId || !myName) return;
+  socket.emit("edu_player_away", {
+    playerId: myId,
+    name: myName,
+    reason,
+    at: Date.now()
+  });
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    awayNotified = true;
+    notifyAway("tab_hidden");
+  } else if (awayNotified) {
+    socket.emit("edu_player_back", {
+      playerId: myId,
+      name: myName,
+      at: Date.now()
+    });
+    awayNotified = false;
+  }
+});
+
+window.addEventListener("blur", () => {
+  notifyAway("window_blur");
+});
+
 // ======== SCREENS ========
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
@@ -635,7 +665,7 @@ socket.on("kicked",()=>{
   gState = null
   myName = ""
   show("joinScreen")
-  showNotif("You were removed","")
+  showNotif("What could you have possibibly done to KANDEEPAN for him to kick you. You deserve an award","")
 })
 
 socket.on("private_message",({message})=>{
@@ -787,7 +817,7 @@ function showEliminated(score){
   document.getElementById("endArea").style.display = "block"
   document.getElementById("endIcon").textContent = "💀"
   document.getElementById("endTitle").textContent = "Eliminated!"
-  document.getElementById("endSub").textContent = "Watch the survivors finish"
+  document.getElementById("endSub").textContent = "Lookup from your phone for the first time in 2 months at the projector to see the other people who actually listened to the lesson and made it to the end"
   document.getElementById("endScore").textContent = score
 }
 

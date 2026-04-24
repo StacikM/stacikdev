@@ -628,6 +628,16 @@ socket.on("edu_event_applied",({eventId})=>{
   }
 })
 
+socket.on("edu_admin_alert", alert => {
+  if (alert.type === "away") {
+    toast(`GET EMMM!!! ${alert.name} looked away / changed tab. THEY ARE GOING ON SNAPCHAT OR TIKTOK OR CALLING THEIR FRIENDS`);
+  }
+
+  if (alert.type === "back") {
+    toast(`${alert.name} came back... but is it too late`);
+  }
+});
+
 // PLAYERS
 function renderPlayers(players){
   const el = document.getElementById("playerList")
