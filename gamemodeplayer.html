@@ -668,6 +668,11 @@ socket.on("kicked",()=>{
   showNotif("What could you have possibibly done to KANDEEPAN for him to kick you. You deserve an award","")
 })
 
+socket.on("edu_thisistheend", ()=>{
+  gState = null
+  window.location.href = "anti67police.html"
+})
+
 socket.on("private_message",({message})=>{
   showNotif("💬 "+message,"broadcast")
 })
