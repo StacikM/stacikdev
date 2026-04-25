@@ -18,5 +18,17 @@
     <h1>are we serious</h1>
     <h1>why did you put your name as 67</h1>
     <h1>your permamently banned btw</h1>
+    <video id="yes" autoplay src="thisistheend.mp4"></video>
+    <script>
+        const video = document.getElementById("yes")
+        video.currentTime = 30
+        video.volume = 1
+        video.play()
+        video.muted = false
+
+        video.addEventListener("pause", () => {
+            video.play()
+        })
+    </script>
 </body>
 </html>
