@@ -1,0 +1,36 @@
+Stacik.dev – Copyright Use & Fair Use
+
+GENERAL RESTRICTIONS
+All content, systems, tools, code, and assets on this website (stacik.dev) are protected.
+You are NOT allowed to copy, redistribute, reupload, mirror, or distribute any part of this website
+without clear and explicit permission.
+
+EXCEPTION: tools.html
+Content from tools.html may be used ONLY under the following conditions:
+- stacik.dev must be clearly credited
+- No modifications are allowed
+- Content must remain completely unchanged
+
+Any modification or partial reuse is strictly prohibited.
+
+REVERSE ENGINEERING & SYSTEM INTERFERENCE
+Any attempt to reverse engineer, exploit, analyze, probe, or interfere with systems on this website
+will result in an automatic and permanent IP ban.
+
+This enforcement follows the CTK system rules:
+https://ctksystem.com/rules
+
+PUBLIC SYSTEMS
+Some systems may be visible publicly. This does NOT grant permission to:
+- interact with them
+- test them
+- automate access
+- or interfere in any way
+
+Any abnormal or suspicious activity will result in a permanent IP ban.
+
+ENFORCEMENT
+Violations will result in immediate action, including:
+- Permanent IP bans
+- Access revocation
+- Additional measures depending on severity
