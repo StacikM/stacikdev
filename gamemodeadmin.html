@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Game Admin</title>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -546,7 +546,12 @@ textarea{resize:vertical;min-height:80px}
 <script src="crash.js"></script>
 <script>
 const SERVER = "https://server.ctksystem.com"
-const socket = io(SERVER)
+
+const conn = new signalR.HubConnectionBuilder()
+  .withUrl(SERVER + "/eduHub")
+  .withAutomaticReconnect()
+  .build()
+
 let localQuestions = []
 let currentEditIdx = null
 let pmTargetId = null
@@ -590,18 +595,29 @@ function toggleSection(id){
   el.style.display = el.style.display==='none' ? 'block' : 'none'
 }
 
-// SOCKET
-socket.on("connect",()=>{
+// CONNECTION
+conn.onreconnecting(()=>{
+  document.getElementById("sdot").classList.remove("online")
+  document.getElementById("connLabel").textContent="Reconnecting"
+})
+
+conn.onreconnected(()=>{
   document.getElementById("sdot").classList.add("online")
   document.getElementById("connLabel").textContent="Online"
-  setInterval(()=>socket.emit("edu_admin_players", pass()), 3000)
 })
-socket.on("disconnect",()=>{
+
+conn.onclose(()=>{
   document.getElementById("sdot").classList.remove("online")
   document.getElementById("connLabel").textContent="Offline"
 })
 
-socket.on("edu_players", players=>{
+conn.start().then(()=>{
+  document.getElementById("sdot").classList.add("online")
+  document.getElementById("connLabel").textContent="Online"
+  setInterval(()=>conn.invoke("EduAdminPlayers", pass()), 3000)
+}).catch(err=>console.error("SignalR connect error:", err))
+
+conn.on("edu_players", players=>{
   allPlayers = players
   renderPlayers(players)
   renderLeaderboard(players)
@@ -609,18 +625,18 @@ socket.on("edu_players", players=>{
   document.getElementById("playerCount").textContent = players.filter(p=>!p.disconnected).length + " online"
 })
 
-socket.on("edu_started", ({gameType})=>{
+conn.on("edu_started", ({gameType})=>{
   activeGameType = gameType
   projectorQuestionCount = localQuestions.length
   renderProjector(allPlayers)
 })
 
-socket.on("edu_ended", ()=>{
+conn.on("edu_ended", ()=>{
   activeGameType = null
   renderProjector(allPlayers)
 })
 
-socket.on("edu_event_applied",({eventId})=>{
+conn.on("edu_event_applied",({eventId})=>{
   const ev = EVENTS.find(e=>e.id===eventId)
   if(ev) {
     toast("Event: "+ev.name)
@@ -628,7 +644,7 @@ socket.on("edu_event_applied",({eventId})=>{
   }
 })
 
-socket.on("edu_admin_alert", alert => {
+conn.on("edu_admin_alert", alert => {
   if (alert.type === "away") {
     toast(`GET EMMM!!! ${alert.name} looked away / changed tab. THEY ARE GOING ON SNAPCHAT OR TIKTOK OR CALLING THEIR FRIENDS`);
   }
@@ -761,7 +777,7 @@ function logEvent(ev){
 }
 
 function fireEvent(id){
-  socket.emit("edu_apply_event",{password:pass(),eventId:id})
+  conn.invoke("EduApplyEvent", pass(), id)
 }
 
 // GAME CONTROLS
@@ -778,25 +794,25 @@ async function endGame(){
 }
 
 function nextQuestion(){
-  socket.emit("edu_next_question",{password:pass()})
+  conn.invoke("EduNextQuestion", pass())
   toast("Next question sent")
 }
 
 function revealAnswer(){
-  socket.emit("edu_reveal_answer",{password:pass()})
+  conn.invoke("EduRevealAnswer", pass())
   toast("Answer revealed")
 }
 
 function sendBroadcast(){
   const msg = document.getElementById("broadcastMsg").value.trim()
   if(!msg) return
-  socket.emit("edu_broadcast",{password:pass(),message:msg})
+  conn.invoke("EduBroadcast", pass(), msg)
   document.getElementById("broadcastMsg").value = ""
   toast("Broadcast sent")
 }
 
 function kickPlayer(id){
-  socket.emit("edu_kick",{password:pass(),playerId:id})
+  conn.invoke("EduKick", pass(), id)
   toast("Player kicked")
 }
 
@@ -811,7 +827,7 @@ function openPM(id, name){
 function sendPM(){
   const msg = document.getElementById("pmText").value.trim()
   if(!msg||!pmTargetId) return
-  socket.emit("edu_pm",{password:pass(),playerId:pmTargetId,message:msg})
+  conn.invoke("EduPm", pass(), pmTargetId, msg)
   closeModal("pmModal")
   toast("Message sent")
 }
