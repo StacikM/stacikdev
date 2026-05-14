@@ -423,17 +423,8 @@ body{
 </div>
 
 <script>
-
-// maintenance i hope i dont forget to remove
-window.open("tempmaintenancepagelol.html", "_blank")
-
-const SERVER = "https://gameserver.ctksystem.com"
-
-const conn = new signalR.HubConnectionBuilder()
-  .withUrl(SERVER + "/eduHub")
-  .withAutomaticReconnect()
-  .build()
-
+const SERVER = "https://server.ctksystem.com"
+const socket = io(SERVER)
 let myId = localStorage.getItem("edu_pid") || "p_"+Math.random().toString(36).substr(2,9)
 localStorage.setItem("edu_pid", myId)
 
