@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Game</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -438,26 +438,35 @@ let mazeRoundAnswers = []
 let roundAnswers = []
 const TILE = 32
 
-let awayNotified = false
+let awayNotified = false;
 
 function notifyAway(reason) {
-  if (!myId || !myName) return
-  conn.invoke("EduPlayerAway", myId, myName, reason, Date.now())
+  if (!myId || !myName) return;
+  socket.emit("edu_player_away", {
+    playerId: myId,
+    name: myName,
+    reason,
+    at: Date.now()
+  });
 }
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    awayNotified = true
-    notifyAway("tab_hidden")
+    awayNotified = true;
+    notifyAway("tab_hidden");
   } else if (awayNotified) {
-    conn.invoke("EduPlayerBack", myId, myName, Date.now())
-    awayNotified = false
+    socket.emit("edu_player_back", {
+      playerId: myId,
+      name: myName,
+      at: Date.now()
+    });
+    awayNotified = false;
   }
-})
+});
 
 window.addEventListener("blur", () => {
-  notifyAway("window_blur")
-})
+  notifyAway("window_blur");
+});
 
 // ======== SCREENS ========
 function show(id){
@@ -466,6 +475,7 @@ function show(id){
 }
 
 // ======== RESET ROUND STATE ========
+// Call this whenever a new question begins or a new game starts
 function resetRoundState(){
   answeredThisQ = false
   eliminatedIdxs = []
@@ -514,39 +524,30 @@ function joinGame(){
   myName = name
   document.getElementById("waitName").textContent = "Hey, "+name+"!"
   document.getElementById("headerName").textContent = name
-  conn.invoke("EduJoin", name, myId)
+  socket.emit("edu_join",{name,playerId:myId})
   show("waitScreen")
 }
 
-// ======== CONNECTION ========
-conn.onreconnecting(()=>{
+// ======== SOCKET EVENTS ========
+socket.on("connect",()=>{
+  document.getElementById("statusDot").className = "status-online"
+  document.getElementById("statusText").textContent = "Connected"
+  // Re-join on reconnect so we get our state back from the server
+  if(myName) socket.emit("edu_join",{name:myName,playerId:myId})
+})
+
+socket.on("disconnect",()=>{
   document.getElementById("statusDot").className = "status-offline"
   document.getElementById("statusText").textContent = "Reconnecting…"
 })
 
-conn.onreconnected(()=>{
-  document.getElementById("statusDot").className = "status-online"
-  document.getElementById("statusText").textContent = "Connected"
-  if(myName) conn.invoke("EduJoin", myName, myId)
-})
-
-conn.onclose(()=>{
-  document.getElementById("statusDot").className = "status-offline"
-  document.getElementById("statusText").textContent = "Disconnected"
-})
-
-conn.start().then(()=>{
-  document.getElementById("statusDot").className = "status-online"
-  document.getElementById("statusText").textContent = "Connected"
-  if(myName) conn.invoke("EduJoin", myName, myId)
-}).catch(err=>console.error("SignalR connect error:", err))
-
-// ======== SOCKET EVENTS ========
-conn.on("edu_state", data=>{
+// edu_state: full sync from server (on join/reconnect)
+socket.on("edu_state", data=>{
   gState = data
   updateHeader(data.player)
 
   if(!data.gameStarted){
+    // Game not running yet — sit in wait screen
     show("waitScreen")
     if(myName){
       document.getElementById("waitName").textContent = "Hey, "+myName+"!"
@@ -554,20 +555,25 @@ conn.on("edu_state", data=>{
     return
   }
 
+  // Game is already in progress — jump straight in with correct state
   resetRoundState()
   enterGameMode(data)
 })
 
-conn.on("edu_started", ({gameType})=>{
+// edu_started: admin just kicked off a new session
+socket.on("edu_started", ({gameType})=>{
+  // Update local state with fresh game info
   if(gState){
     gState.gameType = gameType
     gState.gameStarted = true
+    // Reset player state to match server reset
     if(gState.player){
       gState.player.score = 0
       gState.player.progress = 0
       gState.player.alive = true
     }
   } else {
+    // gState not yet received (race condition) — build a minimal placeholder
     gState = { gameType, player:{ score:0, progress:0, alive:true }, gameStarted:true, config:{} }
   }
 
@@ -577,12 +583,13 @@ conn.on("edu_started", ({gameType})=>{
   show("gameScreen")
   showNotif("Game started: "+gameType.toUpperCase(),"event")
 
+  // Hide all sub-areas; the first edu_question event will populate them
   document.getElementById("qaArea").style.display = "none"
   document.getElementById("mazeWrap").style.display = "none"
   document.getElementById("endArea").style.display = "none"
 })
 
-conn.on("edu_question",({question,answers,index,total})=>{
+socket.on("edu_question",({question,answers,index,total})=>{
   resetRoundState()
   if(gState?.gameType === "survival" && gState?.player && gState.player.alive === false){
     showEliminated(gState.player.score || 0)
@@ -604,12 +611,12 @@ conn.on("edu_question",({question,answers,index,total})=>{
   showQuestion(question, answers, index, total)
 })
 
-conn.on("edu_reveal",({correctIndex})=>{
+socket.on("edu_reveal",({correctIndex})=>{
   const shownIndex = gState?.gameType === "maze" ? correctIndex : getDisplayedAnswerIndex(correctIndex)
   highlightCorrect(shownIndex >= 0 ? shownIndex : correctIndex)
 })
 
-conn.on("edu_hint",({eliminateIndex})=>{
+socket.on("edu_hint",({eliminateIndex})=>{
   const shownIndex = gState?.gameType === "maze" ? eliminateIndex : getDisplayedAnswerIndex(eliminateIndex)
   eliminatedIdxs.push(shownIndex)
   const btns = document.querySelectorAll('.option-btn')
@@ -617,15 +624,15 @@ conn.on("edu_hint",({eliminateIndex})=>{
   showNotif("💡 Hint: one wrong answer eliminated","event")
 })
 
-conn.on("edu_timer",({endsAt,duration})=>{
+socket.on("edu_timer",({endsAt,duration})=>{
   startTimerBar(endsAt, duration)
 })
 
-conn.on("edu_broadcast",({message})=>{
+socket.on("edu_broadcast",({message})=>{
   showNotif("📢 "+message,"broadcast")
 })
 
-conn.on("edu_event_applied",({eventId})=>{
+socket.on("edu_event_applied",({eventId})=>{
   const names = {
     double_points:"⚡ 2x Points active!",
     freeze_top:"🧊 Leader frozen!",
@@ -639,38 +646,38 @@ conn.on("edu_event_applied",({eventId})=>{
   showNotif(names[eventId]||"Event fired","event")
 })
 
-conn.on("maze_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
-conn.on("speed_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
-conn.on("survival_result",({correct,alive,score,nextIndex})=>{
+socket.on("maze_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
+socket.on("speed_result",({correct,score,nextIndex})=>handleResult(correct,score,nextIndex))
+socket.on("survival_result",({correct,alive,score,nextIndex})=>{
   if(gState?.player) gState.player.alive = alive
   handleResult(correct,score,nextIndex)
   if(!alive) showEliminated(score)
 })
 
-conn.on("edu_ended",()=>{
+socket.on("edu_ended",()=>{
   gState = null
   show("waitScreen")
   document.getElementById("waitName").textContent = myName ? "Hey, "+myName+"!" : "Game Over!"
   showNotif("Session ended by admin","event")
 })
 
-conn.on("kicked",()=>{
+socket.on("kicked",()=>{
   gState = null
   myName = ""
   show("joinScreen")
   showNotif("What could you have possibibly done to KANDEEPAN for him to kick you. You deserve an award","")
 })
 
-conn.on("edu_thisistheend", ()=>{
+socket.on("edu_thisistheend", ()=>{
   gState = null
   window.location.href = "anti67police.html"
 })
 
-conn.on("private_message",({message})=>{
+socket.on("private_message",({message})=>{
   showNotif("💬 "+message,"broadcast")
 })
 
-conn.on("edu_game_complete",()=>{
+socket.on("edu_game_complete",()=>{
   showFinished(gState?.player?.score||0)
 })
 
@@ -773,8 +780,8 @@ function sendAnswer(idx){
   if(btn) btn.classList.add("selected")
   document.querySelectorAll('.option-btn').forEach(b=>b.style.pointerEvents="none")
 
-  const evMap = {maze:"MazeAnswer",speed:"SpeedAnswer",survival:"SurvivalAnswer"}
-  conn.invoke(evMap[mode]||"MazeAnswer", myId, answerIndex)
+  const evMap = {maze:"maze_answer",speed:"speed_answer",survival:"survival_answer"}
+  socket.emit(evMap[mode]||"maze_answer",{playerId:myId,answerIndex})
 }
 
 function handleResult(correct, score, nextIndex){
