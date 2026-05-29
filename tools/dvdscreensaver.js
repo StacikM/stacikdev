@@ -1,0 +1,1 @@
+setInterval(()=>Object.assign(document.body.appendChild(Object.assign(document.createElement("div"),{innerText:"DVD",style:`position:fixed;left:${x=(x+dx<0||x+dx>innerWidth-60?(dx*=-1,x+dx):x+dx)}px;top:${y=(y+dy<0||y+dy>innerHeight-30?(dy*=-1,y+dy):y+dy)}px;font:30px sans-serif;color:hsl(${h=(h+5)%360},100%,50%)`})),{}),16,x=0,y=0,dx=3,dy=3,h=0)
