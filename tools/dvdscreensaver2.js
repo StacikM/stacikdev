@@ -1,0 +1,1 @@
+(()=>{const d=Object.assign(document.body.appendChild(document.createElement("div")),{innerText:"DVD"});Object.assign(d.style,{position:"fixed",font:"30px sans-serif",color:"white"});let x=0,y=0,dx=3,dy=3;setInterval(()=>{x=(x+dx<0||x+dx>innerWidth-60)?(dx*=-1,x+dx):x+dx;y=(y+dy<0||y+dy>innerHeight-30)?(dy*=-1,y+dy):y+dy;d.style.left=x+"px";d.style.top=y+"px"},16)})()
