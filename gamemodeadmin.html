@@ -91,10 +91,25 @@ body{
   margin-bottom:12px;
 }
 .card-title{
-  font-size:11px;font-weight:700;
-  text-transform:uppercase;letter-spacing:1px;
+  font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.8px;
   color:var(--muted);margin-bottom:12px;
 }
+.card-desc{
+  font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;
+}
+.danger-zone{
+  border-top:1px solid var(--border);
+  margin:12px 0 10px;
+  padding-top:10px;
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;letter-spacing:1px;
+  color:var(--danger);text-transform:uppercase;
+}
+.mode-selected-label{
+  font-size:11px;color:var(--muted);margin-bottom:10px;
+}
+.mode-selected-label strong{color:var(--text)}
 
 /* INPUTS */
 input[type=text],input[type=password],select,textarea{
@@ -400,7 +415,7 @@ textarea{resize:vertical;min-height:80px}
 <div class="tabs" id="tabs">
   <div class="tab active" onclick="switchTab('control')">Control</div>
   <div class="tab" onclick="switchTab('players')">Players</div>
-  <div class="tab" onclick="switchTab('leaderboard')">Board</div>
+  <div class="tab" onclick="switchTab('leaderboard')">Leaderboard</div>
   <div class="tab" onclick="switchTab('projector')">Projector</div>
   <div class="tab" onclick="switchTab('events')">Events</div>
   <div class="tab" onclick="switchTab('questions')">Questions</div>
@@ -410,33 +425,47 @@ textarea{resize:vertical;min-height:80px}
 <div class="panel active" id="panel-control">
 
   <div class="card">
-    <div class="card-title">Auth</div>
-    <input type="password" id="pass" placeholder="Admin password…">
+    <div class="card-title">Admin Password</div>
+    <input type="password" id="pass" placeholder="Enter admin password to authenticate…">
   </div>
 
   <div class="card">
     <div class="card-title">Game Mode</div>
+    <div class="card-desc">Select a mode, then start the session. All players will be put into the chosen mode.</div>
     <div class="mode-pills">
       <div class="mode-pill selected" onclick="selectMode('maze',this)">🌀 Maze</div>
       <div class="mode-pill" onclick="selectMode('speed',this)">⚡ Speed</div>
       <div class="mode-pill" onclick="selectMode('survival',this)">💀 Survival</div>
     </div>
-    <div id="selectedMode" style="display:none">maze</div>
+    <div id="selectedMode" class="mode-selected-label">Selected: <strong>Maze</strong></div>
 
-    <button class="btn btn-accent" onclick="startGame()">▶ START SESSION</button>
-    <button class="btn btn-danger" onclick="endGame()">■ TERMINATE</button>
+    <button class="btn btn-accent" onclick="startGame()">▶ Start Session</button>
+    <div class="danger-zone">⚠ Danger Zone</div>
+    <button class="btn btn-danger" onclick="endGame()">■ Terminate Session</button>
   </div>
 
   <div class="card">
-    <div class="card-title">Question Control</div>
+    <div class="card-title">Question Controls</div>
+    <div class="card-desc">Manually advance questions or show the correct answer to all players.</div>
     <button class="btn btn-surface" onclick="nextQuestion()">→ Next Question</button>
-    <button class="btn btn-surface" onclick="revealAnswer()">✓ Reveal Answer</button>
+    <p>once everyone answered and answer revealed, PRESS THIS ^</p>
+    <button class="btn btn-surface" onclick="revealAnswer()">✓ Reveal Answer to All</button>
+    <p>reveal answer (doesn't work for maze) ^</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Why it no work</div>
+    <div class="card-desc">Reasons why it doesn't work</div>
+    <p>I answered on Maze and I can't answer again: you have only one try for one question, press next question</p>
+    <p>DONT PRESS START SESSION IT WILL RESET EVERYTHING</p><br>
+    <p>I died on survival but it revived me next round: no, impossible, unless you have pressed start button causing a reset</p>
   </div>
 
   <div class="card">
     <div class="card-title">Broadcast Message</div>
-    <input type="text" id="broadcastMsg" placeholder="Message to all players…">
-    <button class="btn btn-warn" onclick="sendBroadcast()">📢 Send to All</button>
+    <div class="card-desc">Send a message that appears on every player's screen instantly.</div>
+    <input type="text" id="broadcastMsg" placeholder="Type a message for all players…">
+    <button class="btn btn-warn" onclick="sendBroadcast()">📢 Send to All Players</button>
   </div>
 
 </div>
@@ -583,6 +612,8 @@ function selectMode(mode, el){
   selectedMode = mode
   document.querySelectorAll('.mode-pill').forEach(p=>p.classList.remove('selected'))
   el.classList.add('selected')
+  const labels = {maze:'Maze',speed:'Speed',survival:'Survival'}
+  document.getElementById('selectedMode').innerHTML = 'Selected: <strong>'+labels[mode]+'</strong>'
 }
 
 function toggleSection(id){
