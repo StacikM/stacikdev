@@ -630,11 +630,11 @@ socket.on("edu_event_applied",({eventId})=>{
 
 socket.on("edu_admin_alert", alert => {
   if (alert.type === "away") {
-    toast(`GET EMMM!!! ${alert.name} looked away / changed tab. THEY ARE GOING ON SNAPCHAT OR TIKTOK OR CALLING THEIR FRIENDS`);
+    toast(`GET EMMM!!! ${alert.name} has looked away from the game`);
   }
 
   if (alert.type === "back") {
-    toast(`${alert.name} came back... but is it too late`);
+    toast(`${alert.name} came back`);
   }
 });
 

@@ -665,7 +665,7 @@ socket.on("kicked",()=>{
   gState = null
   myName = ""
   show("joinScreen")
-  showNotif("What could you have possibibly done to KANDEEPAN for him to kick you. You deserve an award","")
+  showNotif("You have been disconnected from the game.","")
 })
 
 socket.on("edu_thisistheend", ()=>{
@@ -822,7 +822,7 @@ function showEliminated(score){
   document.getElementById("endArea").style.display = "block"
   document.getElementById("endIcon").textContent = "💀"
   document.getElementById("endTitle").textContent = "Eliminated!"
-  document.getElementById("endSub").textContent = "Lookup from your phone for the first time in 2 months at the projector to see the other people who actually listened to the lesson and made it to the end"
+  document.getElementById("endSub").textContent = "You answered wrong."
   document.getElementById("endScore").textContent = score
 }
 
