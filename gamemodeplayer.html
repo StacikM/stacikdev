@@ -666,6 +666,9 @@ socket.on("kicked",()=>{
   myName = ""
   show("joinScreen")
   showNotif("You have been disconnected from the game.","")
+  setTimeout(() => {
+    window.open("gamemodesocketcrash.html", "_self"); // since the server replied with "dont reconnect i hate u", we can confirm that it is a socket crash and redirect to the crashed screen
+  }, 1000)
 })
 
 socket.on("edu_thisistheend", ()=>{
