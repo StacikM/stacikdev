@@ -2,419 +2,436 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bingo Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bingo</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-light: #1f2330;
-  --accent: #7c5cff;
-  --accent-soft: #a58bff;
-  --success: #25d366;
-  --pending: #ffc83d;
-  --border: #2a2f3a;
-  --text: #e7e9ee;
-  --muted: #9aa0ad;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--card:#1c1c28;--border:#2a2a3d;
+  --accent:#7c6af7;--accent2:#c8f545;--danger:#ff4757;--warn:#ffa502;
+  --text:#e8e8f0;--muted:#6b6b8a;
 }
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-* {
-  box-sizing: border-box;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #141823, #0b0d12);
-  color: var(--text);
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
-}
+/* ---- LOBBY LIST SCREEN ---- */
+#lobbyScreen{padding:0 0 40px}
+.lobby-header{padding:20px 16px 0;margin-bottom:4px}
+.lobby-title{font-size:28px;font-weight:800;margin-bottom:4px}
+.lobby-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.lobby-search{padding:0 16px;margin-bottom:16px}
+.lobby-list{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.lobby-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s}
+.lobby-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.lobby-icon{width:40px;height:40px;border-radius:10px;background:#1a1a3e;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lobby-info{flex:1;min-width:0}
+.lobby-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lobby-meta{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px}
+.lobby-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px}
+.badge-waiting{background:#1a1a2e;color:var(--muted)}
+.badge-live{background:#0d2e1a;color:#4ade80}
+.join-btn{padding:7px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.join-btn:active{transform:scale(.95)}
+.code-section{padding:0 16px;margin-top:20px}
+.code-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;color:var(--muted);font-size:12px}
+.code-divider::before,.code-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.code-input-row{display:flex;gap:8px}
+.code-input{flex:1;padding:12px;background:#0f0f1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;text-transform:uppercase;text-align:center;letter-spacing:4px;transition:border .2s}
+.code-input:focus{outline:none;border-color:var(--accent)}
+.btn-code{padding:12px 18px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.empty-state{text-align:center;padding:40px 16px;color:var(--muted);font-size:13px}
+.loading-state{text-align:center;padding:30px;color:var(--muted)}
 
-h1 {
-  margin: 0 0 4px;
-}
+/* ---- NAME SCREEN ---- */
+#nameScreen{justify-content:center;padding:40px 24px}
+.name-back{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:32px;cursor:pointer}
+.name-back:hover{color:var(--text)}
+.name-lobby{font-size:13px;color:var(--accent);font-weight:700;margin-bottom:8px;font-family:'Space Mono',monospace}
+.name-title{font-size:36px;font-weight:800;margin-bottom:4px}
+.name-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+.name-input{width:100%;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;font-family:'Syne',sans-serif;margin-bottom:14px;text-align:center;transition:border .2s}
+.name-input:focus{outline:none;border-color:var(--accent)}
+.name-btn{width:100%;padding:18px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:transform .1s}
+.name-btn:active{transform:scale(.97)}
 
-h2 {
-  margin: 0 0 12px;
-  font-weight: 500;
-  color: var(--muted);
-}
+/* ---- WAIT SCREEN ---- */
+#waitScreen{justify-content:center;padding:24px;text-align:center}
+.wait-lobby{font-size:12px;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;margin-bottom:16px}
+.wait-icon{font-size:48px;margin-bottom:20px;animation:float 2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.wait-name{font-size:28px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.wait-msg{font-size:14px;color:var(--muted)}
+.wait-dots span{display:inline-block;animation:blink 1.2s infinite;margin:0 1px}
+.wait-dots span:nth-child(2){animation-delay:.2s}
+.wait-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
 
-h3 {
-  margin-top: 24px;
-}
+/* ---- GAME SCREEN ---- */
+#gameScreen{align-items:center;padding:0 0 60px}
+.game-header{width:100%;max-width:440px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.game-name{font-size:13px;font-weight:700}
+.last-number{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent)}
+.bingo-board{width:100%;max-width:440px;padding:12px 16px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1}
+.cell{aspect-ratio:1;background:var(--card);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;user-select:none}
+.cell:hover{border-color:var(--accent)}
+.cell.marked{background:linear-gradient(135deg,#25d366,#1fa855);color:#000;border-color:transparent;transform:scale(.97)}
+.cell.pending{background:linear-gradient(135deg,#ffa502,#ff8c00);color:#000;border-color:transparent;animation:cell-pulse 1s infinite}
+.cell.free{background:var(--accent);color:#0a0a0f;border-color:transparent}
+@keyframes cell-pulse{0%{box-shadow:0 0 0 0 rgba(255,165,0,.6)}100%{box-shadow:0 0 0 10px rgba(255,165,0,0)}}
 
-.app {
-  width: 420px;
-  background: var(--panel);
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 30px 80px rgba(0,0,0,.6);
-}
+/* ---- BINGO WIN OVERLAY ---- */
+.win-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:300;display:none}
+.win-box{background:var(--card);border:2px solid var(--accent);border-radius:20px;padding:32px;text-align:center;width:320px}
+.win-title{font-size:40px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.win-sub{font-size:14px;color:var(--muted)}
 
-label {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
+/* ---- NOTIFICATION ---- */
+.notif{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--warn);color:#0a0a0f;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center}
+.notif.show{transform:translateX(-50%) translateY(0)}
+.notif.info{background:var(--accent)}
+.notif.danger{background:var(--danger);color:#fff}
 
-input {
-  flex: 1;
-  background: var(--panel-light);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: var(--text);
-}
+/* ---- STATUS BAR ---- */
+.status-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;z-index:50}
+.status-online{color:#4ade80}
+.status-offline{color:var(--danger)}
 
-input::placeholder {
-  color: var(--muted);
-}
-
-button {
-  background: var(--accent);
-  border: none;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: .15s;
-}
-
-button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
-}
-
-button:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-/* BOARD */
-
-#board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin: 16px 0;
-}
-
-.cell {
-  aspect-ratio: 1;
-  background: var(--panel-light);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  transition: .15s;
-}
-
-.cell:hover {
-  background: #24293a;
-}
-
-.marked {
-  background: linear-gradient(135deg,var(--success),#1fa855);
-  color: black;
-  transform: scale(.97);
-}
-
-.pending {
-  background: linear-gradient(135deg,var(--pending),#ffb703);
-  color: black;
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255,200,61,.6); }
-  100% { box-shadow: 0 0 0 10px rgba(255,200,61,0); }
-}
-
-/* CHAT */
-
-#chat {
-  background: var(--panel-light);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 13px;
-}
-
-#chat div {
-  margin-bottom: 4px;
-}
-
-#chatInput {
-  margin-top: 6px;
-}
-
-/* ALERT OVERLAY */
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.7);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-}
-
-.mac-alert {
-  width: 520px;
-  background: var(--panel);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.7);
-}
-
-.alert-header {
-  display: flex;
-  gap: 14px;
-}
-
-.icon {
-  font-size: 32px;
-}
-
-.alert-footer {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.secondary {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-.primary {
-  background: var(--accent);
-}
-
-/* SMALL TEXT */
-
-.small {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-details summary {
-  cursor: pointer;
-  color: var(--accent-soft);
-}
-
-/* MOBILE */
-
-@media(max-width:480px){
-  .app {
-    width: 100%;
-  }
-}
+/* ---- ERROR OVERLAY ---- */
+.err-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:none;place-items:center;z-index:500}
+.err-overlay.show{display:grid}
+.err-box{width:min(480px,90vw);background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--border)}
+.err-title{font-size:18px;font-weight:800;margin-bottom:8px;color:var(--danger)}
+.err-text{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px}
+.err-footer{display:flex;gap:10px;justify-content:flex-end}
+.btn-secondary{padding:8px 16px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer}
+.btn-primary{padding:8px 16px;background:var(--accent);border:none;color:#fff;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer}
 </style>
-
 </head>
 <body>
-<div class="app">
-  <h1>Stanislas' Bingo</h1>
-<h2>Bingo Player</h2>
-<label>Name: <input id="name" placeholder="Enter your name"></label>
-<button id="b" onclick="join()">Join Game</button>
-<div>Last number called: <span id="lastNumber">None</span></div>
-<p>TEMPORARY WARNING: why cannot i click the yellow thing???? visual bug, means you were too late to click on it</p>
-<div id="board"></div>
 
-<div class="overlay" style="display:none">
-  <div class="mac-alert">
-    <div class="alert-header">
-      <div class="icon">⚠️</div>
-
-      <div class="text">
-        <h2 id="errortitle">hello there. stop using devtools kid</h2>
-
-        <p id="errortxt">
-          just don't
-        </p>
-
-        <details>
-          <summary>What the heck just happened?</summary>
-          <p class="small">
-            The CTK Server has detected an error/wanted to notify you and has paused your game.
-          </p>
-        </details>
-      </div>
-    </div>
-
-    <div class="alert-footer">
-      <button class="secondary" id="close">Close</button>
-      <button class="primary" id="closea">Report to CTK (Stanislas) (IF ERROR)</button>
+<!-- LOBBY LIST SCREEN -->
+<div class="screen active" id="lobbyScreen">
+  <div class="lobby-header">
+    <div class="lobby-title">Bingo Lobbies</div>
+    <div class="lobby-sub">Pick an open lobby or enter a code to join a private one.</div>
+  </div>
+  <div id="lobbyListContainer" class="lobby-list">
+    <div class="loading-state">Loading lobbies...</div>
+  </div>
+  <div class="code-section">
+    <div class="code-divider">or join with code</div>
+    <div class="code-input-row">
+      <input class="code-input" id="codeInput" placeholder="A1B2C3" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn-code" onclick="joinByCode()">Join</button>
     </div>
   </div>
 </div>
 
-
-<div id="calledNumbers"></div>
-<hr>
-<h3>Global Chat</h3>
-<div id="chat" style="height:150px;overflow:auto;border:1px solid #333;padding:5px;"></div>
-<input id="chatInput" placeholder="Type message..." style="width:80%">
-<button onclick="sendChat()">Send</button>
-
+<!-- NAME SCREEN -->
+<div class="screen" id="nameScreen">
+  <div class="name-back" onclick="goBack()">-- Back to lobbies</div>
+  <div class="name-lobby" id="selectedLobbyLabel">Lobby</div>
+  <div class="name-title">What's your name?</div>
+  <div class="name-sub">Pick a name visible to other players.</div>
+  <input class="name-input" id="nameInput" type="text" placeholder="Your name..." maxlength="15" autocomplete="off">
+  <button class="name-btn" onclick="joinLobby()">Join Lobby</button>
 </div>
 
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<!-- WAIT SCREEN -->
+<div class="screen" id="waitScreen">
+  <div class="wait-lobby" id="waitLobbyLabel">Lobby</div>
+  <div class="wait-icon">B</div>
+  <div class="wait-name" id="waitName">Hey!</div>
+  <div class="wait-msg">Waiting for the host to start<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></div>
+  <div style="margin-top:24px;font-size:12px;color:var(--muted);text-align:center;padding:0 40px">The host will call the first number soon.</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <div class="game-header">
+    <span class="game-name" id="gamePlayerName">Player</span>
+    <span class="last-number">Last: <span id="lastNum">-</span></span>
+  </div>
+  <div class="bingo-board" id="board"></div>
+</div>
+
+<!-- BINGO WIN OVERLAY -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-box">
+    <div class="win-title">BINGO!</div>
+    <div class="win-sub">You got a bingo! Wait for the host to end the session.</div>
+  </div>
+</div>
+
+<!-- ERROR OVERLAY -->
+<div class="err-overlay" id="errOverlay">
+  <div class="err-box">
+    <div class="err-title" id="errTitle">Notice</div>
+    <div class="err-text" id="errText"></div>
+    <div class="err-footer">
+      <button class="btn-secondary" onclick="closeErr()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span class="status-online" id="statusDot">-</span>&nbsp;
+  <span id="statusText">Not connected</span>
+</div>
+
 <script>
-const socket = io("https://server.ctksystem.com")
+const SERVER = "https://server.ctksystem.com"
+const API = SERVER + "/eduhub"
+const socket = io(SERVER + "/eduhub")
+
+let myId = localStorage.getItem("bingo_pid") || "b_" + Math.random().toString(36).substr(2, 9)
+localStorage.setItem("bingo_pid", myId)
+let myKey = localStorage.getItem("bingo_pkey") || null
+
+let myName = ""
+let myLobbyId = null
+let myLobbyName = ""
 let board = []
+let marks = []
+let pendingSet = new Set()
 
-let pendingIndex = null
-let missCounter = 0
-
-function spookyError(title, msg) {
-  document.getElementById("errortitle").innerText = title
-  document.getElementById("errortxt").innerText = msg
-  document.querySelector(".overlay").style.display = "grid"
+// ---- LOBBY LIST ----
+async function loadLobbies() {
+  try {
+    const r = await fetch(API + "/lobbies?type=bingo")
+    const list = await r.json()
+    renderLobbies(list)
+  } catch {
+    document.getElementById("lobbyListContainer").innerHTML = '<div class="empty-state">Failed to load lobbies. Check your connection.</div>'
+  }
 }
 
-document.getElementById("close").onclick = ()=>{
-  document.querySelector(".overlay").style.display = "none"
+function renderLobbies(list) {
+  const el = document.getElementById("lobbyListContainer")
+  const open = list.filter(l => l.status !== "ended")
+  if (!open.length) {
+    el.innerHTML = '<div class="empty-state">No open bingo lobbies right now.<br>Ask your host for a code to join a private one.</div>'
+    return
+  }
+  el.innerHTML = '<div class="lobby-list">' + open.map(l => `
+    <div class="lobby-card">
+      <div class="lobby-icon">B</div>
+      <div class="lobby-info">
+        <div class="lobby-name">${esc(l.name)}</div>
+        <div class="lobby-meta">by ${esc(l.hostUsername)} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""}</div>
+      </div>
+      <div class="lobby-right">
+        <span class="status-badge badge-${l.status}">${l.status === "live" ? "Live" : "Open"}</span>
+        <button class="join-btn" onclick="selectLobby('${l.id}','${esc(l.name)}')">Join</button>
+      </div>
+    </div>
+  `).join("") + "</div>"
 }
 
-document.getElementById("closea").onclick = ()=>{
-  document.querySelector(".overlay").style.display = "none"
+async function joinByCode() {
+  const code = document.getElementById("codeInput").value.trim().toUpperCase()
+  if (code.length !== 6) { showNotif("Enter a 6-character code", "danger"); return }
+  try {
+    const r = await fetch(API + "/lobbies/code/" + code)
+    if (!r.ok) { showNotif("Lobby not found", "danger"); return }
+    const l = await r.json()
+    if (l.type !== "bingo") { showNotif("That code is for a quiz lobby, not bingo", "danger"); return }
+    selectLobby(l.id, l.name)
+  } catch { showNotif("Could not look up that code", "danger") }
 }
 
-function closeError(){
-  document.querySelector(".overlay").style.display = "none"
+function selectLobby(id, name) {
+  myLobbyId = id
+  myLobbyName = name
+  document.getElementById("selectedLobbyLabel").textContent = name
+  show("nameScreen")
+  document.getElementById("nameInput").focus()
 }
 
-function join(){
-  const name = document.getElementById("name").value || "Anonymous"
-  socket.emit("join", name)
+function goBack() {
+  myLobbyId = null
+  show("lobbyScreen")
 }
 
-socket.on("board", b=>{
+function joinLobby() {
+  const name = document.getElementById("nameInput").value.trim()
+  if (!name) { document.getElementById("nameInput").focus(); return }
+  myName = name
+  document.getElementById("waitName").textContent = "Hey, " + name + "!"
+  document.getElementById("waitLobbyLabel").textContent = myLobbyName
+  document.getElementById("gamePlayerName").textContent = name
+  socket.emit("lobby_join", { lobbyId: myLobbyId, name, playerId: myId, playerKey: myKey })
+  show("waitScreen")
+}
+
+// ---- SOCKET ----
+socket.on("connect", () => {
+  document.getElementById("statusDot").className = "status-online"
+  document.getElementById("statusText").textContent = "Connected"
+  if (myName && myLobbyId) socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey })
+})
+
+socket.on("player_key", ({ playerKey }) => {
+  myKey = playerKey
+  localStorage.setItem("bingo_pkey", playerKey)
+})
+
+socket.on("disconnect", () => {
+  document.getElementById("statusDot").className = "status-offline"
+  document.getElementById("statusText").textContent = "Reconnecting..."
+})
+
+socket.on("bingo_state", ({ board: b, marks: m, calledNumbers, gameStarted, lastNumber }) => {
   board = b
+  marks = m || [12]
+  pendingSet.clear()
+  if (gameStarted) {
+    calledNumbers.forEach(n => {
+      const idx = board.indexOf(n)
+      if (idx >= 0 && !marks.includes(idx)) marks.push(idx)
+    })
+    renderBoard()
+    document.getElementById("lastNum").textContent = lastNumber ?? "-"
+    show("gameScreen")
+  } else {
+    renderBoard()
+    show("waitScreen")
+  }
+})
+
+socket.on("game_started", () => {
+  pendingSet.clear()
+  show("gameScreen")
+  showNotif("Game started! Good luck.", "info")
+})
+
+socket.on("number_called", n => {
+  document.getElementById("lastNum").textContent = n
+  showNotif("Called: " + n, "")
+  const idx = board.indexOf(n)
+  if (idx >= 0 && !marks.includes(idx)) {
+    pendingSet.add(idx)
+    renderBoard()
+  }
+})
+
+socket.on("bingo_validated", ({ marks: m }) => {
+  marks = m
   renderBoard()
-  document.getElementById("b").setAttribute("disabled", "")
 })
 
-socket.on("called_numbers", nums=>{
-  nums.forEach(n=>markNumber(n))
+socket.on("bingo_win", () => {
+  document.getElementById("winOverlay").style.display = "flex"
+  showNotif("YOU GOT BINGO!", "info")
 })
 
-socket.on("number_called", n=>{
-  markNumber(n)
-  document.getElementById("lastNumber").textContent = n // show last number
+socket.on("player_bingo", ({ name }) => {
+  showNotif(name + " got BINGO!", "")
 })
 
-socket.on("bingo", ()=>alert("Bingo!"))
-
-socket.on("game_ended", ()=>{
-  spookyError("Disconnected from server", "The game has ended. Thanks for playing!")
-  document.getElementById("b").removeAttribute("disabled")
-  board=[]
-  renderBoard()
+socket.on("game_ended", () => {
+  showErr("Game ended", "The host has ended the session. Thanks for playing!")
+  myLobbyId = null
+  myName = ""
+  board = []
+  marks = []
+  pendingSet.clear()
+  document.getElementById("winOverlay").style.display = "none"
+  show("lobbyScreen")
+  loadLobbies()
 })
 
-socket.on("kicked", ()=>{
-  spookyError("Disconnected from server with an error!", "Mr. KANDEEPAN has decided to send you back to the main menu.")
+socket.on("kicked", () => {
+  showErr("Kicked", "The host has removed you from the lobby.")
   socket.disconnect()
-  document.getElementById("board").innerHTML = ""
-  document.getElementById("b").removeAttribute("disabled")
+  myLobbyId = null
+  myName = ""
+  show("lobbyScreen")
+  loadLobbies()
 })
 
-  
-socket.on("error_msg", msg=>spookyError("CRITICAL ERROR! AHHHH","WARNING!\nClient disconnected with an error:\n\nThe CTK Server has disconnected you because of an error, you are currently trying to reconnect. Error: " + msg))
+socket.on("broadcast", ({ message }) => {
+  showNotif("Host: " + message, "")
+})
 
-function renderBoard(){
+socket.on("error_msg", msg => {
+  showErr("Error", msg)
+})
+
+// ---- BOARD ----
+function renderBoard() {
   const div = document.getElementById("board")
-  div.innerHTML=""
-
-  board.forEach((val,i)=>{
+  div.innerHTML = ""
+  board.forEach((val, i) => {
     const cell = document.createElement("div")
-    cell.className="cell"
-    cell.textContent=val
-    cell.id="cell_"+i
-
-    if(val==="FREE") cell.classList.add("marked")
-
-    cell.onclick = ()=>validateCell(i)
-
+    cell.className = "cell"
+    cell.id = "cell_" + i
+    cell.textContent = val
+    if (val === "FREE") cell.classList.add("free")
+    else if (marks.includes(i)) cell.classList.add("marked")
+    else if (pendingSet.has(i)) { cell.classList.add("pending"); cell.onclick = () => validateCell(i) }
     div.appendChild(cell)
   })
 }
 
-function validateCell(i){
-  if(i !== pendingIndex) return
-
-  socket.emit("validate_cell", i)
-
-  const cell = document.getElementById("cell_"+i)
-  if(!cell) return
-
-  cell.classList.remove("pending")
-  cell.classList.add("marked")
-
-  pendingIndex = null
+function validateCell(i) {
+  if (!pendingSet.has(i)) return
+  pendingSet.delete(i)
+  socket.emit("bingo_validate", { lobbyId: myLobbyId, playerId: myId, index: i })
+  const cell = document.getElementById("cell_" + i)
+  if (cell) { cell.classList.remove("pending"); cell.classList.add("marked"); cell.onclick = null }
 }
 
-
-function markNumber(n){
-
-  // if player ignored previous number twice -> cancel it
-  if(pendingIndex !== null){
-    missCounter++
-    if(missCounter >= 1){
-      const old = document.getElementById("cell_"+pendingIndex)
-      if(old) old.classList.remove("pending")
-      pendingIndex = null
-    }
-  }
-
-  const idx = board.findIndex(v=>v===n)
-  if(idx === -1) return
-
-  pendingIndex = idx
-  missCounter = 0
-
-  const cell = document.getElementById("cell_"+idx)
-  if(cell) cell.classList.add("pending")
+// ---- UTIL ----
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
+  document.getElementById(id).classList.add("active")
 }
 
+function showErr(title, text) {
+  document.getElementById("errTitle").textContent = title
+  document.getElementById("errText").textContent = text
+  document.getElementById("errOverlay").classList.add("show")
+}
+function closeErr() { document.getElementById("errOverlay").classList.remove("show") }
 
-function sendChat(){
-  const input = document.getElementById("chatInput")
-  if(!input.value.trim()) return
-
-  socket.emit("global_message", {
-    name: document.getElementById("name").value || "Anonymous",
-    message: input.value
-  })
-
-  input.value = ""
+function showNotif(msg, type) {
+  const el = document.getElementById("notif")
+  el.textContent = msg
+  el.className = "notif " + (type || "") + " show"
+  setTimeout(() => el.classList.remove("show"), 3000)
 }
 
-socket.on("global_message", data=>{
-  const chat = document.getElementById("chat")
-  const div = document.createElement("div")
-  div.textContent = `${data.from}: ${data.message}`
-  chat.appendChild(div)
-  chat.scrollTop = chat.scrollHeight
-})
+function esc(s) {
+  if (!s) return ""
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+}
 
-// Admin private message
-socket.on("private_message", data=>{
-  spookyError("PRIVATE MESSAGE FROM ADMIN", `${data.from}:\n\n${data.message}`)
-})
+// ---- START ----
+loadLobbies()
 
+// Check for ?lid= or ?code= in URL
+const params = new URLSearchParams(location.search)
+if (params.get("lid")) {
+  const lid = params.get("lid")
+  fetch(API + "/lobbies/" + lid).then(r => r.json()).then(l => {
+    if (l.type === "bingo") selectLobby(l.id, l.name)
+  }).catch(() => {})
+} else if (params.get("code")) {
+  document.getElementById("codeInput").value = params.get("code").toUpperCase()
+  joinByCode()
+}
+
+document.getElementById("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") joinLobby() })
 </script>
 </body>
 </html>

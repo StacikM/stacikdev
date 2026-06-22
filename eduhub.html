@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Stacik.dev - EduHub</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --surface:#13131a;
+  --card:#1c1c28;
+  --border:#2a2a3d;
+  --accent:#c8f545;
+  --accent2:#7c6af7;
+  --danger:#ff4757;
+  --warn:#ffa502;
+  --text:#e8e8f0;
+  --muted:#6b6b8a;
+  --boost:#c8f545;
+  --chaos:#ff4757;
+}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ---- AUTH SCREEN ---- */
+#screenAuth{align-items:center;justify-content:center;padding:24px}
+.auth-box{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px}
+.auth-logo{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px}
+.auth-title{font-size:32px;font-weight:800;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.auth-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
+.auth-tab{flex:1;padding:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:.2s}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ---- COMMON FORM ---- */
+label.field{display:block;margin-bottom:14px}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=email],input[type=password],select,textarea{
+  width:100%;padding:12px;background:#0f0f1a;border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;transition:border .2s
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px}
+.err-msg{font-size:12px;color:var(--danger);margin-bottom:10px;min-height:18px}
+
+/* ---- BUTTONS ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:8px}
+.btn:active{transform:scale(.97)}
+.btn-accent{background:var(--accent);color:#0a0a0f}
+.btn-surface{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warn{background:var(--warn);color:#0a0a0f}
+.btn-sm{padding:7px 12px;font-size:11px;width:auto;margin-bottom:0}
+.btn-boost{background:#1a2e00;color:var(--boost);border:1px solid #c8f54533}
+.btn-chaos{background:#2e0000;color:var(--chaos);border:1px solid #ff475733}
+
+/* ---- TOPBAR ---- */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent)}
+.user-chip{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.user-chip strong{color:var(--text)}
+
+/* ---- TABS ---- */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:49px;z-index:99}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 20px;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ---- PANELS ---- */
+.panel{display:none;padding:16px;max-width:760px;margin:0 auto;width:100%}
+.panel.active{display:block}
+
+/* ---- CARDS ---- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px}
+
+/* ---- LOBBY CARDS ---- */
+.lobby-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:16px}
+.lobby-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s}
+.lobby-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.lobby-card.bingo{border-left:3px solid #7c6af7}
+.lobby-card.quiz{border-left:3px solid var(--accent)}
+.lobby-name{font-size:16px;font-weight:800;margin-bottom:4px}
+.lobby-meta{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:10px}
+.lobby-footer{display:flex;align-items:center;justify-content:space-between}
+.lobby-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px}
+.badge-waiting{background:#1a1a2e;color:var(--muted)}
+.badge-live{background:#0d2e1a;color:#4ade80}
+.badge-ended{background:#2e0d0d;color:#f87171}
+.badge-type-bingo{background:#1a1a3e;color:#a78bfa}
+.badge-type-quiz{background:#1a2e00;color:var(--accent)}
+
+/* ---- PLAYER LIST ---- */
+.player-item{display:flex;align-items:center;gap:10px;padding:10px;background:#0f0f1a;border-radius:8px;margin-bottom:6px}
+.player-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.player-info{flex:1;min-width:0}
+.player-name{font-weight:700;font-size:13px}
+.player-meta-text{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace}
+.badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:20px}
+.badge-alive{background:#0d2e1a;color:#4ade80}
+.badge-dead{background:#2e0d0d;color:#f87171}
+.badge-disc{background:#1a1a2e;color:var(--muted)}
+
+/* ---- LEADERBOARD ---- */
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin-bottom:6px;background:#0f0f1a}
+.lb-rank{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--muted);width:24px;text-align:center;flex-shrink:0}
+.lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
+.lb-name{flex:1;font-weight:700;font-size:13px}
+.lb-score{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent)}
+.lb-bar{height:2px;background:#c8f54522;border-radius:2px;margin-top:4px}
+.lb-bar-fill{height:2px;background:var(--accent);border-radius:2px;transition:width .5s}
+
+/* ---- EVENTS GRID ---- */
+.events-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.event-card{padding:12px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:#0f0f1a}
+.event-card:active{transform:scale(.96)}
+.event-card.boost{border-color:#c8f54533}
+.event-card.chaos{border-color:#ff475733}
+.event-name{font-size:12px;font-weight:700}
+.event-desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
+
+/* ---- QUESTIONS EDITOR ---- */
+.q-item{padding:10px 12px;background:#0f0f1a;border-radius:8px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.q-num{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;width:22px}
+.q-text{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-actions{display:flex;gap:6px;flex-shrink:0}
+.answer-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.answer-row input[type=text]{margin-bottom:0;flex:1}
+.correct-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:14px}
+.correct-btn.selected{border-color:var(--accent);background:var(--accent);color:#0a0a0f}
+
+/* ---- FILE DROP ---- */
+.file-drop{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border .2s;margin-bottom:10px}
+.file-drop:hover{border-color:var(--accent)}
+.file-drop input{display:none}
+
+/* ---- MODAL ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:16px 16px 0 0;border-top:1px solid var(--border);padding:20px;width:100%;transform:translateY(100%);transition:transform .25s;max-height:88vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+
+/* ---- TOAST ---- */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--accent);color:#0a0a0f;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:999;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ---- LIVE BADGE ---- */
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--accent);text-transform:uppercase}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ---- RESULTS ---- */
+.result-session{background:#0f0f1a;border-radius:8px;padding:12px;margin-bottom:8px}
+.result-time{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:6px}
+.result-player{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.result-player:last-child{border-bottom:none}
+
+/* ---- CODE DISPLAY ---- */
+.code-display{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent);letter-spacing:6px;text-align:center;padding:12px;background:#0f0f1a;border-radius:8px;margin:8px 0}
+
+/* ---- ADMIN TABLE ---- */
+.user-row{display:flex;align-items:center;gap:10px;padding:10px;background:#0f0f1a;border-radius:8px;margin-bottom:6px}
+.user-info{flex:1;min-width:0}
+.user-email{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-sub{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace}
+
+/* ---- MODE PILLS ---- */
+.mode-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.mode-pill{padding:8px 14px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted)}
+.mode-pill.selected{background:var(--accent);color:#0a0a0f;border-color:var(--accent)}
+
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px}
+
+.danger-zone{border-top:1px solid var(--border);margin:12px 0 10px;padding-top:10px;display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--danger);text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="screen active" id="screenAuth">
+  <div class="auth-box">
+    <div class="auth-logo">// EduHub BETA</div>
+    <div class="auth-title">Host a Game</div>
+    <div class="auth-sub">Register or login to create and manage game lobbies.</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+    </div>
+
+    <div id="formLogin">
+      <label class="field">
+        <div class="field-label">Email</div>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      </label>
+      <label class="field">
+        <div class="field-label">Password</div>
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+      </label>
+      <div class="err-msg" id="loginErr"></div>
+      <button class="btn btn-accent" onclick="doLogin()">Login</button>
+    </div>
+
+    <div id="formRegister" style="display:none">
+      <label class="field">
+        <div class="field-label">Display name</div>
+        <input type="text" id="regName" placeholder="Your name" maxlength="30">
+      </label>
+      <label class="field">
+        <div class="field-label">Email</div>
+        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+      </label>
+      <label class="field">
+        <div class="field-label">Password</div>
+        <input type="password" id="regPass" placeholder="At least 6 characters" autocomplete="new-password">
+      </label>
+      <div class="err-msg" id="regErr"></div>
+      <button class="btn btn-accent" onclick="doRegister()">Create account</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div class="screen" id="screenDash">
+  <div class="topbar">
+    <span class="logo">// EduHub BETA</span>
+    <div class="user-chip">
+      <span>Logged in as <strong id="headerUsername"></strong></span>
+      <button class="btn btn-sm btn-surface" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="tabs" id="dashTabs">
+    <div class="tab active" onclick="switchDashTab('my')">My Lobbies</div>
+    <div class="tab" onclick="switchDashTab('create')">Create Lobby</div>
+    <div class="tab" id="adminTab" style="display:none" onclick="switchDashTab('admin')">Admin</div>
+  </div>
+
+  <!-- MY LOBBIES -->
+  <div class="panel active" id="panel-my">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span class="live-badge"><span class="live-dot"></span> My Lobbies</span>
+      <button class="btn btn-sm btn-surface" onclick="loadMyLobbies()">Refresh</button>
+    </div>
+    <div id="myLobbyList"><p style="color:var(--muted);text-align:center;padding:40px 0">No lobbies yet. Create one above.</p></div>
+  </div>
+
+  <!-- CREATE LOBBY -->
+  <div class="panel" id="panel-create">
+    <div class="card">
+      <div class="card-title">Lobby Details</div>
+      <label class="field">
+        <div class="field-label">Lobby name</div>
+        <input type="text" id="createName" placeholder="Give your lobby a name" maxlength="50">
+      </label>
+      <div class="field-label" style="margin-bottom:8px">Game type</div>
+      <div class="mode-pills">
+        <div class="mode-pill selected" onclick="selectCreateType('bingo',this)">Bingo</div>
+        <div class="mode-pill" onclick="selectCreateType('quiz',this)">Quiz</div>
+      </div>
+      <div id="gameModeRow" style="display:none;margin-bottom:12px">
+        <div class="field-label" style="margin-bottom:8px">Quiz mode</div>
+        <div class="mode-pills" id="gmPills">
+          <div class="mode-pill selected" onclick="selectGM('maze',this)">Maze</div>
+          <div class="mode-pill" onclick="selectGM('speed',this)">Speed</div>
+          <div class="mode-pill" onclick="selectGM('survival',this)">Survival</div>
+        </div>
+      </div>
+      <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="createPrivate" style="width:auto;margin-bottom:0">
+        <span>Private lobby (join by code only)</span>
+      </label>
+      <div class="err-msg" id="createErr"></div>
+      <button class="btn btn-accent" onclick="doCreateLobby()">Create Lobby</button>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="panel" id="panel-admin">
+    <div class="card">
+      <div class="card-title">Users</div>
+      <button class="btn btn-sm btn-surface" onclick="loadAdminUsers()" style="margin-bottom:12px">Refresh</button>
+      <div id="adminUserList"><p style="color:var(--muted);font-size:13px">Loading...</p></div>
+    </div>
+    <div class="card" style="margin-top:8px">
+      <div class="card-title">All Lobbies</div>
+      <button class="btn btn-sm btn-surface" onclick="loadAdminLobbies()" style="margin-bottom:12px">Refresh</button>
+      <div id="adminLobbyList"><p style="color:var(--muted);font-size:13px">Loading...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY MANAGEMENT SCREEN -->
+<div class="screen" id="screenLobby">
+  <div class="topbar">
+    <span class="logo" id="lobbyHeaderName">// Lobby</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="lobbyStatus" class="lobby-badge badge-waiting">Waiting</span>
+      <button class="btn btn-sm btn-surface" onclick="backToDash()">Back</button>
+    </div>
+  </div>
+  <div class="tabs" id="lobbyTabs">
+    <div class="tab active" onclick="switchLobbyTab('control')">Control</div>
+    <div class="tab" onclick="switchLobbyTab('players')">Players</div>
+    <div class="tab" onclick="switchLobbyTab('leaderboard')">Leaderboard</div>
+    <div class="tab" id="questionsTab" onclick="switchLobbyTab('questions')">Questions</div>
+    <div class="tab" onclick="switchLobbyTab('results')">Results</div>
+  </div>
+
+  <!-- CONTROL -->
+  <div class="panel active" id="lpanel-control">
+    <div class="card">
+      <div class="card-title">Lobby Code</div>
+      <div class="code-display" id="lobbyCode">------</div>
+      <p style="font-size:11px;color:var(--muted);text-align:center">Share this code with players so they can join</p>
+    </div>
+
+    <div class="card" id="bingoControls" style="display:none">
+      <div class="card-title">Bingo Controls</div>
+      <button class="btn btn-accent" onclick="lobbyAction('start')">Start Game</button>
+      <button class="btn btn-surface" onclick="lobbyAction('call')" id="callBtn">Call Number</button>
+      <div style="margin-top:8px;font-size:13px">Last called: <span id="lastCalledNum" style="font-family:'Space Mono',monospace;color:var(--accent)">-</span></div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">Numbers called: <span id="calledCount">0</span> / 75</div>
+      <div class="danger-zone">Danger Zone</div>
+      <button class="btn btn-danger" onclick="lobbyAction('end')">End Session</button>
+    </div>
+
+    <div class="card" id="quizControls" style="display:none">
+      <div class="card-title">Game Mode</div>
+      <div class="mode-pills" id="quizModePills">
+        <div class="mode-pill selected" onclick="selectLobbyGM('maze',this)">Maze</div>
+        <div class="mode-pill" onclick="selectLobbyGM('speed',this)">Speed</div>
+        <div class="mode-pill" onclick="selectLobbyGM('survival',this)">Survival</div>
+      </div>
+      <button class="btn btn-accent" onclick="lobbyAction('start')">Start Session</button>
+      <button class="btn btn-surface" onclick="lobbyAction('next-question')">Next Question</button>
+      <button class="btn btn-surface" onclick="lobbyAction('reveal')">Reveal Answer</button>
+      <div class="danger-zone">Danger Zone</div>
+      <button class="btn btn-danger" onclick="lobbyAction('end')">End Session</button>
+    </div>
+
+    <div class="card" id="quizEvents" style="display:none">
+      <div class="card-title">Events</div>
+      <div class="section-label" style="color:var(--boost)">Boosts</div>
+      <div class="events-grid" id="boostEvGrid"></div>
+      <div class="section-label" style="color:var(--chaos)">Chaos</div>
+      <div class="events-grid" id="chaosEvGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Broadcast Message</div>
+      <input type="text" id="broadcastMsg" placeholder="Message to send to all players..." style="margin-bottom:8px">
+      <button class="btn btn-warn" onclick="lobbyAction('broadcast')">Send to all</button>
+    </div>
+
+    <div class="card" id="endedCard" style="display:none">
+      <div class="card-title">Session Ended</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">This session has ended. Results are saved. Delete the lobby when you are done reviewing.</p>
+      <button class="btn btn-danger" onclick="deleteLobby()">Delete Lobby</button>
+    </div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="panel" id="lpanel-players">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span class="live-badge"><span class="live-dot"></span> Live</span>
+      <span id="playerCountLabel" style="font-size:12px;color:var(--muted)">0 online</span>
+    </div>
+    <div id="lobbyPlayerList"><p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No players yet</p></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="panel" id="lpanel-leaderboard">
+    <div style="margin-bottom:12px">
+      <span class="live-badge"><span class="live-dot"></span> Live</span>
+    </div>
+    <div id="lobbyLeaderboard"></div>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div class="panel" id="lpanel-questions">
+    <div class="card">
+      <div class="card-title">Load Questions</div>
+      <div class="file-drop" onclick="document.getElementById('qFile').click()">
+        <input type="file" id="qFile" accept=".json" onchange="loadQFile(this)">
+        <div style="font-size:22px;margin-bottom:6px">Upload</div>
+        <div style="font-size:13px;font-weight:700">Tap to upload .json</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">or paste below</div>
+      </div>
+      <button class="btn btn-surface" onclick="togglePasteArea()">Paste JSON</button>
+      <div id="pasteArea" style="display:none;margin-top:8px">
+        <textarea id="jsonPaste" placeholder='[{"question":"...","answers":[{"text":"...","correct":true}]}]'></textarea>
+        <button class="btn btn-accent" onclick="loadFromPaste()">Load</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">Questions (<span id="qCount">0</span>)</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-accent" onclick="addQuestion()">+ Add</button>
+          <button class="btn btn-sm btn-surface" onclick="pushConfig()">Push to server</button>
+        </div>
+      </div>
+      <div id="questionList"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel" id="lpanel-results">
+    <div id="resultsList"><p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No results yet</p></div>
+  </div>
+</div>
+
+<!-- EDIT QUESTION MODAL -->
+<div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:14px">Edit Question</div>
+    <input type="text" id="qTextInput" placeholder="Question text...">
+    <div class="section-label">Answers</div>
+    <div id="answerList"></div>
+    <button class="btn btn-surface btn-sm" onclick="addAnswer()" style="width:100%;margin-bottom:10px">+ Answer</button>
+    <button class="btn btn-accent" onclick="saveQuestion()">Save</button>
+  </div>
+</div>
+
+<!-- BAN MODAL -->
+<div class="modal-overlay" id="banModal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Ban User</div>
+    <div id="banTarget" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
+    <input type="text" id="banReason" placeholder="Reason (optional)">
+    <button class="btn btn-danger" onclick="confirmBan()">Confirm Ban</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SERVER = "https://server.ctksystem.com"
+const API = SERVER + "/eduhub"
+const socket = io(SERVER + "/eduhub")
+
+let token = localStorage.getItem("eduhub_token") || null
+let currentUser = null
+let currentLobbyId = null
+let currentLobbyType = null
+let currentLobbyGM = "maze"
+let allPlayers = []
+let localQuestions = []
+let currentEditIdx = null
+let banTargetEmail = null
+let createType = "bingo"
+let createGM = "maze"
+
+const EVENTS = [
+  {id:"double_points",name:"2x Points",desc:"Next answer worth double",type:"boost"},
+  {id:"speed_bonus",name:"Speed Bonus",desc:"First 3 correct get +5",type:"boost"},
+  {id:"reveal_hint",name:"Hint Drop",desc:"Eliminate one wrong answer",type:"boost"},
+  {id:"bonus_question",name:"Bonus Round",desc:"Next question worth 3x",type:"boost"},
+  {id:"freeze_top",name:"Freeze Leader",desc:"Top player skips next question",type:"chaos"},
+  {id:"random_score",name:"Score Shuffle",desc:"Randomise points +/-20%",type:"chaos"},
+  {id:"steal_points",name:"Point Steal",desc:"Leader loses 10pts to 2nd",type:"chaos"},
+  {id:"invert_scores",name:"Score Flip",desc:"Last place jumps to top",type:"chaos"},
+]
+
+// ---- INIT ----
+window.addEventListener("DOMContentLoaded", () => {
+  if (token) resumeSession()
+  document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin() })
+  document.getElementById("regPass").addEventListener("keydown", e => { if (e.key === "Enter") doRegister() })
+  renderEvents()
+})
+
+async function resumeSession() {
+  try {
+    const r = await apiFetch("/auth/me")
+    currentUser = r
+    enterDashboard()
+  } catch {
+    token = null
+    localStorage.removeItem("eduhub_token")
+  }
+}
+
+// ---- AUTH TABS ----
+function switchAuthTab(tab) {
+  document.querySelectorAll(".auth-tab").forEach((t, i) => t.classList.toggle("active", ["login","register"][i] === tab))
+  document.getElementById("formLogin").style.display = tab === "login" ? "block" : "none"
+  document.getElementById("formRegister").style.display = tab === "register" ? "block" : "none"
+}
+
+async function doLogin() {
+  const email = v("loginEmail"), pass = v("loginPass")
+  try {
+    const r = await apiFetch("/auth/login", "POST", { email, password: pass })
+    token = r.token
+    localStorage.setItem("eduhub_token", token)
+    currentUser = r.user
+    enterDashboard()
+  } catch (e) {
+    document.getElementById("loginErr").textContent = e.message
+    if (e.message == "Banned") {
+        document.getElementById("loginErr").textContent = "You have been permamently banned from using EduHub. Please contact admin"
+    }
+  }
+}
+
+async function doRegister() {
+  const username = v("regName"), email = v("regEmail"), password = v("regPass")
+  try {
+    const r = await apiFetch("/auth/register", "POST", { email, password, username })
+    token = r.token
+    localStorage.setItem("eduhub_token", token)
+    currentUser = r.user
+    enterDashboard()
+  } catch (e) {
+    document.getElementById("regErr").textContent = e.message
+  }
+}
+
+function doLogout() {
+  token = null
+  currentUser = null
+  localStorage.removeItem("eduhub_token")
+  if (currentLobbyId) socket.emit("lobby_leave", { lobbyId: currentLobbyId })
+  currentLobbyId = null
+  show("screenAuth")
+}
+
+// ---- DASHBOARD ----
+function enterDashboard() {
+  document.getElementById("headerUsername").textContent = currentUser.username
+  if (currentUser.isAdmin) document.getElementById("adminTab").style.display = "block"
+  show("screenDash")
+  loadMyLobbies()
+  if (currentUser.isAdmin) { loadAdminUsers(); loadAdminLobbies() }
+}
+
+function switchDashTab(name) {
+  const names = ["my","create","admin"]
+  document.querySelectorAll("#dashTabs .tab").forEach((t, i) => t.classList.toggle("active", names[i] === name))
+  document.querySelectorAll("#screenDash .panel").forEach(p => p.classList.remove("active"))
+  document.getElementById("panel-" + name)?.classList.add("active")
+}
+
+async function loadMyLobbies() {
+  try {
+    const list = await apiFetch("/lobbies/my")
+    renderMyLobbies(list)
+  } catch(e) { toast("Failed to load lobbies") }
+}
+
+function renderMyLobbies(list) {
+  const el = document.getElementById("myLobbyList")
+  if (!list.length) { el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0">No lobbies yet. Create one in the Create tab.</p>'; return }
+  el.innerHTML = '<div class="lobby-grid">' + list.map(l => `
+    <div class="lobby-card ${l.type}" onclick="openLobby('${l.id}')">
+      <div class="lobby-name">${esc(l.name)}</div>
+      <div class="lobby-meta">${l.type === "quiz" ? l.gameMode : "bingo"} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""} - Code: ${l.code}</div>
+      <div class="lobby-footer">
+        <span class="lobby-badge badge-type-${l.type}">${l.type.toUpperCase()}</span>
+        <span class="lobby-badge badge-${l.status}">${l.status.charAt(0).toUpperCase() + l.status.slice(1)}</span>
+      </div>
+    </div>
+  `).join("") + "</div>"
+}
+
+// ---- CREATE LOBBY ----
+function selectCreateType(type, el) {
+  createType = type
+  document.querySelectorAll("#panel-create .mode-pills").item(0).querySelectorAll(".mode-pill").forEach(p => p.classList.remove("selected"))
+  el.classList.add("selected")
+  document.getElementById("gameModeRow").style.display = type === "quiz" ? "block" : "none"
+}
+
+function selectGM(gm, el) {
+  createGM = gm
+  document.getElementById("gmPills").querySelectorAll(".mode-pill").forEach(p => p.classList.remove("selected"))
+  el.classList.add("selected")
+}
+
+async function doCreateLobby() {
+  const name = v("createName")
+  const isPrivate = document.getElementById("createPrivate").checked
+  if (!name) { document.getElementById("createErr").textContent = "Enter a lobby name"; return }
+  document.getElementById("createErr").textContent = ""
+  try {
+    const r = await apiFetch("/lobbies", "POST", { name, type: createType, gameMode: createType === "quiz" ? createGM : undefined, isPrivate })
+    toast("Lobby created!")
+    switchDashTab("my")
+    await loadMyLobbies()
+    openLobby(r.id)
+  } catch(e) { document.getElementById("createErr").textContent = e.message }
+}
+
+// ---- LOBBY MANAGEMENT ----
+async function openLobby(id) {
+  currentLobbyId = id
+  try {
+    const data = await apiFetch("/lobbies/" + id + "/full")
+    currentLobbyType = data.type
+    currentLobbyGM = data.gameMode || "maze"
+    allPlayers = data.players || []
+
+    document.getElementById("lobbyHeaderName").textContent = "// " + data.name
+    document.getElementById("lobbyCode").textContent = data.code || "------"
+    updateLobbyStatus(data.status)
+
+    document.getElementById("bingoControls").style.display = data.type === "bingo" ? "block" : "none"
+    document.getElementById("quizControls").style.display = data.type === "quiz" ? "block" : "none"
+    document.getElementById("quizEvents").style.display = data.type === "quiz" ? "block" : "none"
+    document.getElementById("questionsTab").style.display = data.type === "quiz" ? "block" : "none"
+
+    if (data.type === "bingo") {
+      document.getElementById("calledCount").textContent = data.game?.calledNumbers?.length || 0
+    }
+
+    renderPlayers(allPlayers)
+    renderLeaderboard(allPlayers)
+    renderResults(data.results || [])
+
+    socket.emit("host_join", { lobbyId: id, token })
+    show("screenLobby")
+    switchLobbyTab("control")
+  } catch(e) { toast("Failed to load lobby: " + e.message) }
+}
+
+function backToDash() {
+  currentLobbyId = null
+  show("screenDash")
+  loadMyLobbies()
+}
+
+function switchLobbyTab(name) {
+  const names = ["control","players","leaderboard","questions","results"]
+  const tabs = document.getElementById("lobbyTabs").querySelectorAll(".tab")
+  tabs.forEach((t, i) => t.classList.toggle("active", names[i] === name))
+  document.querySelectorAll("#screenLobby .panel").forEach(p => p.classList.remove("active"))
+  document.getElementById("lpanel-" + name)?.classList.add("active")
+}
+
+function updateLobbyStatus(status) {
+  const el = document.getElementById("lobbyStatus")
+  el.textContent = status.charAt(0).toUpperCase() + status.slice(1)
+  el.className = "lobby-badge badge-" + status
+  const ended = status === "ended"
+  document.getElementById("endedCard").style.display = ended ? "block" : "none"
+  if (ended) {
+    document.getElementById("bingoControls").style.display = "none"
+    document.getElementById("quizControls").style.display = "none"
+    document.getElementById("quizEvents").style.display = "none"
+  }
+}
+
+function selectLobbyGM(gm, el) {
+  currentLobbyGM = gm
+  document.getElementById("quizModePills").querySelectorAll(".mode-pill").forEach(p => p.classList.remove("selected"))
+  el.classList.add("selected")
+}
+
+async function deleteLobby() {
+  if (!currentLobbyId) return
+  try {
+    await apiFetch("/lobbies/" + currentLobbyId, "DELETE")
+    toast("Lobby deleted")
+    backToDash()
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function lobbyAction(action) {
+  if (!currentLobbyId) return
+  let body = {}
+  let url = "/lobbies/" + currentLobbyId + "/" + action
+
+  if (action === "start" && currentLobbyType === "quiz") body.gameMode = currentLobbyGM
+  if (action === "broadcast") {
+    const msg = v("broadcastMsg")
+    if (!msg) return
+    body.message = msg
+  }
+
+  try {
+    const r = await apiFetch(url, "POST", body)
+    if (action === "call" && r.number !== undefined) {
+      document.getElementById("lastCalledNum").textContent = r.number
+      const cnt = parseInt(document.getElementById("calledCount").textContent || "0") + 1
+      document.getElementById("calledCount").textContent = cnt
+    }
+    if (action === "broadcast") document.getElementById("broadcastMsg").value = ""
+    if (action === "end") { updateLobbyStatus("ended"); allPlayers = []; renderPlayers([]); loadLobbyResults() }
+    if (action === "start") updateLobbyStatus("live")
+    toast("Done: " + action)
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function fireEvent(eventId) {
+  if (!currentLobbyId) return
+  try {
+    await apiFetch("/lobbies/" + currentLobbyId + "/event", "POST", { eventId })
+    const ev = EVENTS.find(e => e.id === eventId)
+    toast("Event: " + (ev?.name || eventId))
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function kickPlayerFromLobby(playerId) {
+  try {
+    await apiFetch("/lobbies/" + currentLobbyId + "/kick/" + playerId, "POST")
+    toast("Player kicked")
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+// ---- SOCKET (host receiving player updates) ----
+socket.on("players_update", players => {
+  if (!currentLobbyId) return
+  allPlayers = players
+  renderPlayers(players)
+  renderLeaderboard(players)
+  document.getElementById("playerCountLabel").textContent = players.filter(p => !p.disconnected).length + " online"
+})
+
+socket.on("number_called", n => {
+  if (!currentLobbyId) return
+  document.getElementById("lastCalledNum").textContent = n
+  const cnt = parseInt(document.getElementById("calledCount").textContent || "0") + 1
+  document.getElementById("calledCount").textContent = cnt
+})
+
+socket.on("event_applied", ({ eventId }) => {
+  const ev = EVENTS.find(e => e.id === eventId)
+  if (ev) toast("Event fired: " + ev.name)
+})
+
+socket.on("quiz_game_complete", ({ players }) => {
+  updateLobbyStatus("waiting")
+  toast("Game complete!")
+  loadLobbyResults()
+})
+
+socket.on("game_ended", () => {
+  updateLobbyStatus("waiting")
+  allPlayers = []
+  renderPlayers([])
+})
+
+// ---- PLAYER RENDER ----
+function renderPlayers(players) {
+  const el = document.getElementById("lobbyPlayerList")
+  document.getElementById("playerCountLabel").textContent = players.filter(p => !p.disconnected).length + " online"
+  if (!players.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No players yet</p>'; return }
+  el.innerHTML = players.map(p => `
+    <div class="player-item">
+      <div class="player-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="player-info">
+        <div class="player-name">${esc(p.name)}</div>
+        <div class="player-meta-text">${currentLobbyType === "quiz" ? "Score: " + p.score + " - Q" + p.progress : (p.hasBingo ? "BINGO" : p.marksCount + " marks")}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="badge ${p.disconnected ? "badge-disc" : (currentLobbyType === "quiz" ? (p.alive ? "badge-alive" : "badge-dead") : "badge-alive")}">${p.disconnected ? "Away" : (currentLobbyType === "quiz" ? (p.alive ? "Alive" : "Dead") : "In game")}</span>
+        <button class="btn btn-sm btn-danger" onclick="kickPlayerFromLobby('${p.playerId}')">Kick</button>
+      </div>
+    </div>
+  `).join("")
+}
+
+function renderLeaderboard(players) {
+  const sorted = [...players].filter(p => !p.disconnected).sort((a, b) => (b.score || 0) - (a.score || 0))
+  const max = sorted[0]?.score || 1
+  const el = document.getElementById("lobbyLeaderboard")
+  if (!sorted.length) { el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0;font-size:13px">No players yet</p>'; return }
+  const medals = ["gold","silver","bronze"]
+  el.innerHTML = sorted.map((p, i) => `
+    <div class="lb-row">
+      <span class="lb-rank ${medals[i] || ""}">${i+1}</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="lb-name">${esc(p.name)}</span>
+          <span class="lb-score">${p.score || 0}</span>
+        </div>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:${Math.min(100,((p.score||0)/max)*100)}%"></div></div>
+      </div>
+    </div>
+  `).join("")
+}
+
+async function loadLobbyResults() {
+  if (!currentLobbyId) return
+  try {
+    const results = await apiFetch("/lobbies/" + currentLobbyId + "/full")
+    renderResults(results.results || [])
+  } catch{}
+}
+
+function renderResults(results) {
+  const el = document.getElementById("resultsList")
+  if (!results.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No results yet</p>'; return }
+  el.innerHTML = [...results].reverse().map((r, i) => `
+    <div class="result-session">
+      <div class="result-time">Session ${results.length - i} - ${r.gameType} - ${new Date(r.endedAt).toLocaleString()}</div>
+      ${r.players.map(p => `
+        <div class="result-player">
+          <span>${esc(p.name)}</span>
+          <span style="font-family:'Space Mono',monospace;color:var(--accent)">${p.score !== undefined ? p.score + " pts" : (p.hasBingo ? "BINGO" : "-")}</span>
+        </div>
+      `).join("")}
+      ${r.winners ? `<div style="margin-top:6px;font-size:11px;color:#4ade80">Winners: ${r.winners.join(", ") || "None"}</div>` : ""}
+    </div>
+  `).join("")
+}
+
+// ---- EVENTS RENDER ----
+function renderEvents() {
+  const boostEl = document.getElementById("boostEvGrid")
+  const chaosEl = document.getElementById("chaosEvGrid")
+  boostEl.innerHTML = EVENTS.filter(e => e.type === "boost").map(e => `
+    <div class="event-card boost" onclick="fireEvent('${e.id}')">
+      <div class="event-name">${e.name}</div>
+      <div class="event-desc">${e.desc}</div>
+    </div>
+  `).join("")
+  chaosEl.innerHTML = EVENTS.filter(e => e.type === "chaos").map(e => `
+    <div class="event-card chaos" onclick="fireEvent('${e.id}')">
+      <div class="event-name">${e.name}</div>
+      <div class="event-desc">${e.desc}</div>
+    </div>
+  `).join("")
+}
+
+// ---- QUESTION EDITOR ----
+function addQuestion() {
+  localQuestions.push({ question: "New Question", answers: [{ text: "Correct Answer", correct: true }, { text: "Wrong Answer", correct: false }] })
+  renderQuestionList()
+}
+
+function renderQuestionList() {
+  document.getElementById("qCount").textContent = localQuestions.length
+  const el = document.getElementById("questionList")
+  if (!localQuestions.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No questions</p>'; return }
+  el.innerHTML = localQuestions.map((q, i) => `
+    <div class="q-item">
+      <span class="q-num">${i+1}</span>
+      <span class="q-text">${esc(q.question)}</span>
+      <div class="q-actions">
+        <button class="btn btn-sm btn-surface" onclick="openEdit(${i})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteQuestion(${i})">Del</button>
+      </div>
+    </div>
+  `).join("")
+}
+
+function deleteQuestion(i) { localQuestions.splice(i, 1); renderQuestionList() }
+
+function openEdit(i) {
+  currentEditIdx = i
+  const q = localQuestions[i]
+  document.getElementById("qTextInput").value = q.question
+  renderAnswers(q.answers)
+  document.getElementById("editModal").classList.add("open")
+}
+
+function renderAnswers(answers) {
+  document.getElementById("answerList").innerHTML = answers.map((a, i) => `
+    <div class="answer-row">
+      <input type="text" value="${esc(a.text)}" oninput="updateAns(${i},this.value)">
+      <button class="correct-btn ${a.correct ? "selected" : ""}" onclick="setCorrect(${i})">v</button>
+      <button class="btn btn-sm btn-danger" onclick="removeAnswer(${i})" style="width:32px;height:32px;padding:0;border-radius:50%;margin-bottom:0">x</button>
+    </div>
+  `).join("")
+}
+
+function updateAns(i, val) { localQuestions[currentEditIdx].answers[i].text = val }
+function setCorrect(idx) {
+  localQuestions[currentEditIdx].answers.forEach((a, i) => a.correct = (i === idx))
+  renderAnswers(localQuestions[currentEditIdx].answers)
+}
+function addAnswer() {
+  localQuestions[currentEditIdx].answers.push({ text: "Option", correct: false })
+  renderAnswers(localQuestions[currentEditIdx].answers)
+}
+function removeAnswer(idx) {
+  localQuestions[currentEditIdx].answers.splice(idx, 1)
+  renderAnswers(localQuestions[currentEditIdx].answers)
+}
+function saveQuestion() {
+  localQuestions[currentEditIdx].question = document.getElementById("qTextInput").value
+  closeModal("editModal")
+  renderQuestionList()
+}
+
+function loadQFile(input) {
+  const file = input.files[0]
+  if (!file) return
+  const r = new FileReader()
+  r.onload = e => { try { applyJSON(JSON.parse(e.target.result)) } catch { toast("Invalid JSON") } }
+  r.readAsText(file)
+}
+
+function loadFromPaste() {
+  try { applyJSON(JSON.parse(document.getElementById("jsonPaste").value)) }
+  catch { toast("Invalid JSON") }
+}
+
+function togglePasteArea() {
+  const el = document.getElementById("pasteArea")
+  el.style.display = el.style.display === "none" ? "block" : "none"
+}
+
+function applyJSON(data) {
+  if (Array.isArray(data)) localQuestions = data
+  else if (data.maze) localQuestions = data.maze
+  else if (data.speed) localQuestions = data.speed
+  else if (data.survival) localQuestions = data.survival
+  else { toast("Unrecognised format"); return }
+  renderQuestionList()
+  toast("Loaded " + localQuestions.length + " questions")
+}
+
+async function pushConfig() {
+  if (!localQuestions.length) { toast("No questions to push"); return }
+  try {
+    await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", {
+      config: { maze: localQuestions, speed: localQuestions, survival: localQuestions }
+    })
+    toast("Config pushed!")
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+// ---- ADMIN ----
+async function loadAdminUsers() {
+  try {
+    const users = await apiFetch("/admin/users")
+    renderAdminUsers(users)
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+function renderAdminUsers(users) {
+  const el = document.getElementById("adminUserList")
+  if (!users.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No users</p>'; return }
+  el.innerHTML = users.map(u => `
+    <div class="user-row">
+      <div class="user-info">
+        <div class="user-email">${esc(u.email)}</div>
+        <div class="user-sub">${esc(u.username)} - Joined ${new Date(u.createdAt).toLocaleDateString()}</div>
+        ${u.banned ? `<div style="font-size:11px;color:var(--danger)">Banned: ${esc(u.banReason)}</div>` : ""}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        ${u.banned
+          ? `<button class="btn btn-sm btn-surface" onclick="unbanUser('${esc(u.email)}')">Unban</button>`
+          : `<button class="btn btn-sm btn-danger" onclick="openBanModal('${esc(u.email)}')">Ban</button>`
+        }
+      </div>
+    </div>
+  `).join("")
+}
+
+async function loadAdminLobbies() {
+  try {
+    const list = await apiFetch("/admin/lobbies")
+    const el = document.getElementById("adminLobbyList")
+    if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No lobbies</p>'; return }
+    el.innerHTML = list.map(l => `
+      <div class="lobby-card ${l.type}" style="margin-bottom:8px" onclick="openLobby('${l.id}')">
+        <div class="lobby-name">${esc(l.name)}</div>
+        <div class="lobby-meta">Host: ${esc(l.hostEmail)} - Code: ${l.code} - ${l.playerCount} players</div>
+        <div class="lobby-footer">
+          <span class="lobby-badge badge-type-${l.type}">${l.type.toUpperCase()}</span>
+          <span class="lobby-badge badge-${l.status}">${l.status}</span>
+        </div>
+      </div>
+    `).join("")
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+function openBanModal(email) {
+  banTargetEmail = email
+  document.getElementById("banTarget").textContent = email
+  document.getElementById("banReason").value = ""
+  document.getElementById("banModal").classList.add("open")
+}
+
+async function confirmBan() {
+  const reason = document.getElementById("banReason").value
+  try {
+    await apiFetch("/admin/ban/" + encodeURIComponent(banTargetEmail), "POST", { reason })
+    closeModal("banModal")
+    toast("User banned")
+    loadAdminUsers()
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function unbanUser(email) {
+  try {
+    await apiFetch("/admin/unban/" + encodeURIComponent(email), "POST")
+    toast("User unbanned")
+    loadAdminUsers()
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+// ---- UTIL ----
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
+  document.getElementById(id).classList.add("active")
+}
+
+function v(id) { return document.getElementById(id).value.trim() }
+
+function esc(s) {
+  if (!s) return ""
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast")
+  t.textContent = msg
+  t.classList.add("show")
+  setTimeout(() => t.classList.remove("show"), 2400)
+}
+
+function handleModalClick(e) { if (e.target.classList.contains("modal-overlay")) closeModal(e.target.id) }
+function closeModal(id) { document.getElementById(id).classList.remove("open") }
+
+async function apiFetch(path, method = "GET", body = null) {
+  const opts = { method, headers: { "Content-Type": "application/json" } }
+  if (token) opts.headers["Authorization"] = "Bearer " + token
+  if (body) opts.body = JSON.stringify(body)
+  const r = await fetch(API + path, opts)
+  const data = await r.json()
+  if (!r.ok) throw new Error(data.error || "Request failed")
+  return data
+}
+</script>
+</body>
+</html>
