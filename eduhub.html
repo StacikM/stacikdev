@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Stacik.dev - EduHub</title>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -212,7 +213,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="landing-wrap">
     <div class="landing-eyebrow">EduHub BETA</div>
     <div class="landing-title">Run live classroom<br><span>games in seconds</span></div>
-    <div class="landing-sub">Host Bingo and Quiz sessions your students join instantly with a code — no installs, no accounts needed for players.</div>
+    <div class="landing-sub">Host Bingo and Quiz sessions your students join instantly with a code with no installs, no accounts needed for players.</div>
 
     <div class="landing-features">
       <div class="landing-feature">
@@ -370,6 +371,10 @@ textarea{resize:vertical;min-height:80px}
       <div class="card-title">Lobby Code</div>
       <div class="code-display" id="lobbyCode">------</div>
       <p style="font-size:11px;color:var(--muted);text-align:center">Share this code with players so they can join</p>
+      <div style="display:flex;justify-content:center;margin-top:12px">
+        <canvas id="joinQR" style="border-radius:8px"></canvas>
+      </div>
+      <p id="joinLink" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all"></p>
     </div>
 
     <div class="card" id="bingoControls" style="display:none">
@@ -663,6 +668,7 @@ async function openLobby(id) {
 
     document.getElementById("lobbyHeaderName").textContent = "// " + data.name
     document.getElementById("lobbyCode").textContent = data.code || "------"
+    renderJoinQR(data.type, data.code)
     updateLobbyStatus(data.status)
 
     document.getElementById("bingoControls").style.display = data.type === "bingo" ? "block" : "none"
@@ -682,6 +688,14 @@ async function openLobby(id) {
     show("screenLobby")
     switchLobbyTab("control")
   } catch(e) { toast("Failed to load lobby: " + e.message) }
+}
+
+function renderJoinQR(type, code) {
+  if (!code) return
+  const page = type === "bingo" ? "bingo.html" : "gamemodeplayer.html"
+  const link = location.origin + location.pathname.replace(/[^/]*$/, "") + page + "?code=" + code
+  document.getElementById("joinLink").textContent = link
+  QRCode.toCanvas(document.getElementById("joinQR"), link, { width: 160, margin: 1, color: { dark: "#0a0a0f", light: "#c8f545" } }, err => { if (err) console.error(err) })
 }
 
 function backToDash() {
