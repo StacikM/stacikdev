@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Stacik.dev - EduHub</title>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/lib/browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -372,7 +372,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="code-display" id="lobbyCode">------</div>
       <p style="font-size:11px;color:var(--muted);text-align:center">Share this code with players so they can join</p>
       <div style="display:flex;justify-content:center;margin-top:12px">
-        <canvas id="joinQR" style="border-radius:8px"></canvas>
+        <div id="joinQR" style="border-radius:8px;overflow:hidden;line-height:0"></div>
       </div>
       <p id="joinLink" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;word-break:break-all"></p>
     </div>
@@ -695,7 +695,9 @@ function renderJoinQR(type, code) {
   const page = type === "bingo" ? "bingo.html" : "gamemodeplayer.html"
   const link = location.origin + location.pathname.replace(/[^/]*$/, "") + page + "?code=" + code
   document.getElementById("joinLink").textContent = link
-  QRCode.toCanvas(document.getElementById("joinQR"), link, { width: 160, margin: 1, color: { dark: "#0a0a0f", light: "#c8f545" } }, err => { if (err) console.error(err) })
+  const el = document.getElementById("joinQR")
+  el.innerHTML = ""
+  new QRCode(el, { text: link, width: 160, height: 160, colorDark: "#0a0a0f", colorLight: "#c8f545" })
 }
 
 function backToDash() {
