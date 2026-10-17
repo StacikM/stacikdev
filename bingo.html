@@ -161,10 +161,10 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 
 <!-- BINGO WIN OVERLAY -->
-<div class="win-overlay" id="winOverlay">
+<div class="win-overlay" id="winOverlay" onclick="this.style.display='none'">
   <div class="win-box">
     <div class="win-title">BINGO!</div>
-    <div class="win-sub">You got a bingo! Wait for the host to end the session.</div>
+    <div class="win-sub">You got a bingo! Tap to keep playing - the host will end the session.</div>
   </div>
 </div>
 
@@ -193,9 +193,12 @@ const SERVER = "https://server.ctksystem.com"
 const API = SERVER + "/eduhub"
 const socket = io(SERVER + "/eduhub")
 
-let myId = localStorage.getItem("bingo_pid") || "b_" + Math.random().toString(36).substr(2, 9)
+let myId = localStorage.getItem("bingo_pid") || "b_" + Math.random().toString(36).slice(2, 11)
 localStorage.setItem("bingo_pid", myId)
-let myKey = localStorage.getItem("bingo_pkey") || null
+// keys are stored per lobby so joining a second lobby never breaks reconnecting to the first
+function getKeys() { try { return JSON.parse(localStorage.getItem("bingo_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("bingo_pkeys", JSON.stringify(k)) }
+const myKey = () => getKeys()[myLobbyId] || null
 
 let myName = ""
 let myLobbyId = null
@@ -231,10 +234,11 @@ function renderLobbies(list) {
       </div>
       <div class="lobby-right">
         <span class="status-badge badge-${l.status}">${l.status === "live" ? "Live" : "Open"}</span>
-        <button class="join-btn" onclick="selectLobby('${l.id}','${esc(l.name)}')">Join</button>
+        <button class="join-btn" data-id="${esc(l.id)}" data-name="${esc(l.name)}">Join</button>
       </div>
     </div>
   `).join("") + "</div>"
+  el.querySelectorAll(".join-btn").forEach(b => b.onclick = () => selectLobby(b.dataset.id, b.dataset.name))
 }
 
 async function joinByCode() {
@@ -244,7 +248,7 @@ async function joinByCode() {
     const r = await fetch(API + "/lobbies/code/" + code)
     if (!r.ok) { showNotif("Lobby not found", "danger"); return }
     const l = await r.json()
-    if (l.type !== "bingo") { showNotif("That code is for a quiz lobby, not bingo", "danger"); return }
+    if (l.type !== "bingo") { showNotif("That code is for another game type, not bingo", "danger"); return }
     selectLobby(l.id, l.name)
   } catch { showNotif("Could not look up that code", "danger") }
 }
@@ -254,6 +258,7 @@ function selectLobby(id, name) {
   myLobbyName = name
   document.getElementById("selectedLobbyLabel").textContent = name
   show("nameScreen")
+  document.getElementById("nameInput").value = localStorage.getItem("bingo_name") || ""
   document.getElementById("nameInput").focus()
 }
 
@@ -269,7 +274,8 @@ function joinLobby() {
   document.getElementById("waitName").textContent = "Hey, " + name + "!"
   document.getElementById("waitLobbyLabel").textContent = myLobbyName
   document.getElementById("gamePlayerName").textContent = name
-  socket.emit("lobby_join", { lobbyId: myLobbyId, name, playerId: myId, playerKey: myKey })
+  localStorage.setItem("bingo_name", name)
+  socket.emit("lobby_join", { lobbyId: myLobbyId, name, playerId: myId, playerKey: myKey() })
   show("waitScreen")
 }
 
@@ -277,12 +283,13 @@ function joinLobby() {
 socket.on("connect", () => {
   document.getElementById("statusDot").className = "status-online"
   document.getElementById("statusText").textContent = "Connected"
-  if (myName && myLobbyId) socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey })
+  if (myName && myLobbyId) socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey() })
 })
 
-socket.on("player_key", ({ playerKey }) => {
-  myKey = playerKey
-  localStorage.setItem("bingo_pkey", playerKey)
+socket.on("player_key", ({ playerKey, lobbyId }) => setKey(lobbyId || myLobbyId, playerKey))
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && myName && myLobbyId && socket.connected) socket.emit("resync", { lobbyId: myLobbyId, playerId: myId })
 })
 
 socket.on("disconnect", () => {
@@ -290,26 +297,26 @@ socket.on("disconnect", () => {
   document.getElementById("statusText").textContent = "Reconnecting..."
 })
 
-socket.on("bingo_state", ({ board: b, marks: m, calledNumbers, gameStarted, lastNumber }) => {
+socket.on("bingo_state", ({ board: b, marks: m, pending, gameStarted, lastNumber, hasBingo }) => {
   board = b
   marks = m || [12]
-  pendingSet.clear()
+  pendingSet = new Set(pending || [])
+  renderBoard()
+  document.getElementById("winOverlay").style.display = hasBingo ? "flex" : "none"
   if (gameStarted) {
-    calledNumbers.forEach(n => {
-      const idx = board.indexOf(n)
-      if (idx >= 0 && !marks.includes(idx)) marks.push(idx)
-    })
-    renderBoard()
     document.getElementById("lastNum").textContent = lastNumber ?? "-"
     show("gameScreen")
   } else {
-    renderBoard()
     show("waitScreen")
   }
 })
 
 socket.on("game_started", () => {
   pendingSet.clear()
+  marks = [12]
+  renderBoard()
+  document.getElementById("winOverlay").style.display = "none"
+  document.getElementById("lastNum").textContent = "-"
   show("gameScreen")
   showNotif("Game started! Good luck.", "info")
 })
@@ -338,8 +345,8 @@ socket.on("player_bingo", ({ name }) => {
   showNotif(name + " got BINGO!", "")
 })
 
-socket.on("game_ended", () => {
-  showErr("Game ended", "The host has ended the session. Thanks for playing!")
+socket.on("game_ended", ({ reason } = {}) => {
+  showErr("Game ended", reason === "Lobby deleted" ? "The host deleted this lobby." : "The host has ended the session. Thanks for playing!")
   myLobbyId = null
   myName = ""
   board = []
@@ -365,6 +372,7 @@ socket.on("broadcast", ({ message }) => {
 
 socket.on("error_msg", msg => {
   showErr("Error", msg)
+  if (/not found|ended|full|Authentication/i.test(msg)) { myLobbyId = null; myName = ""; show("lobbyScreen"); loadLobbies() }
 })
 
 // ---- BOARD ----
@@ -423,7 +431,7 @@ loadLobbies()
 const params = new URLSearchParams(location.search)
 if (params.get("lid")) {
   const lid = params.get("lid")
-  fetch(API + "/lobbies/" + lid).then(r => r.json()).then(l => {
+  fetch(API + "/lobbies/" + encodeURIComponent(lid)).then(r => r.json()).then(l => {
     if (l.type === "bingo") selectLobby(l.id, l.name)
   }).catch(() => {})
 } else if (params.get("code")) {

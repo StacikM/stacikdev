@@ -13,9 +13,9 @@
   --accent:#c8f545;--accent2:#7c6af7;--danger:#ff4757;--warn:#ffa502;
   --text:#e8e8f0;--muted:#6b6b8a;
 }
-body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:36px}
 
-.screen{display:none;min-height:100vh;flex-direction:column}
+.screen{display:none;min-height:calc(100vh - 36px);flex-direction:column}
 .screen.active{display:flex}
 
 /* ---- LOBBY LIST ---- */
@@ -71,72 +71,97 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 
 /* ---- GAME SCREEN ---- */
 #gameScreen{width:100%;max-width:500px;align-self:center}
-.game-header{width:100%;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.game-header{width:100%;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:50}
 .score-badge{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)}
-.progress-text{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
-.player-chip{font-size:12px;color:var(--text);font-weight:700;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.timer-bar-wrap{height:3px;background:var(--border);width:100%}
-.timer-bar{height:3px;background:var(--accent);transition:width .5s linear;width:100%}
+.progress-text{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;text-align:center}
+.player-chip{font-size:12px;color:var(--text);font-weight:700;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer-bar-wrap{height:4px;background:var(--border);width:100%}
+.timer-bar{height:4px;background:var(--accent);width:100%}
 .timer-bar.danger{background:var(--danger)}
-.question-area{padding:20px 16px 16px}
+.time-left{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);text-align:right;padding:6px 16px 0;height:22px}
+.banner{margin:8px 16px 0;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:none;text-align:center}
+.banner.show{display:block;animation:slideUp .3s ease}
+.banner.boost{background:#1a2e00;color:var(--accent);border:1px solid #c8f54533}
+.banner.chaos{background:#2e0000;color:var(--danger);border:1px solid #ff475733}
+.question-area{padding:12px 16px 12px}
 .q-number{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-family:'Space Mono',monospace}
-.q-text{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:20px}
+.q-text{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:12px;word-break:break-word}
 .options{padding:0 16px;display:flex;flex-direction:column;gap:10px}
-.option-btn{width:100%;padding:16px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;text-align:left;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
-.option-btn::before{content:"";position:absolute;inset:0;background:var(--accent);opacity:0;transition:opacity .15s}
-.option-btn:active::before{opacity:.08}
+.option-btn{width:100%;padding:16px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;text-align:left;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;word-break:break-word}
+.option-btn:active{transform:scale(.98)}
 .option-btn.selected{border-color:var(--accent);background:#1a2500}
 .option-btn.correct{border-color:#4ade80;background:#0d2e1a;color:#4ade80}
 .option-btn.wrong{border-color:var(--danger);background:#2e0d0d;color:var(--danger)}
-.option-btn.eliminated{opacity:.3;pointer-events:none}
+.option-btn.eliminated{opacity:.25;pointer-events:none;text-decoration:line-through}
+.option-btn.locked{pointer-events:none}
+.option-btn.dim{opacity:.45}
 .option-letter{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:background .15s,color .15s}
 .option-btn.selected .option-letter{background:var(--accent);color:#0a0a0f}
 .option-btn.correct .option-letter{background:#4ade80;color:#0d2e1a}
 .option-btn.wrong .option-letter{background:var(--danger);color:#fff}
+.option-count{margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted)}
+
+.status-card{margin:14px 16px 0;padding:14px;border-radius:12px;background:var(--card);border:1px solid var(--border);text-align:center;font-size:14px;font-weight:700;display:none}
+.status-card.show{display:block;animation:slideUp .3s ease}
+.status-card.good{border-color:#4ade80;color:#4ade80;background:#0d2e1a}
+.status-card.bad{border-color:var(--danger);color:var(--danger);background:#2e0d0d}
+.status-card.ice{border-color:#60a5fa;color:#93c5fd;background:#0c1a33}
+.status-card small{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:4px}
 
 /* ---- MAZE ---- */
-#mazeWrap{padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;display:none}
-.maze-head{width:100%;display:flex;flex-direction:column;gap:6px}
-.maze-question{font-size:15px;font-weight:700;line-height:1.35;text-align:center;word-break:break-word}
-.maze-legend{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-.maze-answer{display:flex;align-items:flex-start;gap:8px;padding:6px 9px;background:#11111a;border:1px solid var(--border);border-radius:16px;min-width:0;max-width:calc(50% - 8px)}
-.maze-answer-label{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#0a0a0f;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0}
-.maze-answer-text{font-size:12px;line-height:1.2;color:var(--text);word-break:break-word;max-width:100%}
-#gameCanvas{border-radius:12px;border:1px solid var(--border);touch-action:none}
-.dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);gap:8px}
-.dpad-btn{width:64px;height:64px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center}
+#mazeWrap{padding:6px 16px 16px;flex-direction:column;align-items:center;gap:12px;display:none}
+.maze-legend{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.maze-answer{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;background:#11111a;border:1px solid var(--border);border-radius:14px;min-width:0}
+.maze-answer.eliminated{opacity:.25;text-decoration:line-through}
+.maze-answer-label{width:22px;height:22px;border-radius:50%;color:#0a0a0f;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0}
+.maze-answer-text{font-size:12px;line-height:1.25;color:var(--text);word-break:break-word;min-width:0}
+#gameCanvas{border-radius:12px;border:1px solid var(--border);touch-action:none;width:min(92vw,352px);height:auto;background:#0d0d18}
+.dpad{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,60px);gap:8px}
+.dpad-btn{width:60px;height:60px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700}
 .dpad-btn:active{background:var(--accent);color:#0a0a0f;transform:scale(.93)}
-.dpad-empty{width:64px;height:64px}
+.dpad-up{grid-column:2;grid-row:1}
+.dpad-left{grid-column:1;grid-row:2}
+.dpad-down{grid-column:2;grid-row:2}
+.dpad-right{grid-column:3;grid-row:2}
+.maze-hint{font-size:11px;color:var(--muted);text-align:center}
 
 /* ---- RESULT FEEDBACK ---- */
 .result-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;pointer-events:none;opacity:0;transition:opacity .2s}
 .result-overlay.show{opacity:1}
-.result-bubble{padding:16px 32px;border-radius:16px;font-size:22px;font-weight:800;transform:scale(.8);transition:transform .2s}
+.result-bubble{padding:16px 32px;border-radius:16px;font-size:22px;font-weight:800;transform:scale(.8);transition:transform .2s;text-align:center}
 .result-overlay.show .result-bubble{transform:scale(1)}
 .result-bubble.correct{background:var(--accent);color:#0a0a0f}
 .result-bubble.wrong{background:var(--danger);color:#fff}
+.result-bubble small{display:block;font-size:13px;font-weight:700;opacity:.8;margin-top:2px}
 
 /* ---- END SCREEN ---- */
 .end-screen{padding:40px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
 .end-icon{font-size:56px;margin-bottom:8px}
 .end-title{font-size:28px;font-weight:800}
 .end-sub{font-size:14px;color:var(--muted)}
-.score-display{margin-top:20px;font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--accent)}
+.score-display{margin-top:12px;font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--accent)}
 .back-lobby-btn{margin-top:16px;padding:14px 28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.board{width:100%;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.board-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0f0f1a;border-radius:8px;font-size:13px;text-align:left}
+.board-row.me{border:1px solid var(--accent);background:#1a2500}
+.board-rank{font-family:'Space Mono',monospace;color:var(--muted);width:22px;flex-shrink:0}
+.board-name{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board-score{font-family:'Space Mono',monospace;color:var(--accent);font-weight:700}
 
 /* ---- NOTIFICATION ---- */
-.notif{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--warn);color:#0a0a0f;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center}
+.notif{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--warn);color:#0a0a0f;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s;max-width:90vw;text-align:center}
 .notif.show{transform:translateX(-50%) translateY(0)}
 .notif.broadcast{background:var(--accent2);color:#fff}
 .notif.event{background:#7c6af7;color:#fff}
 .notif.info{background:var(--accent);color:#0a0a0f}
+.notif.danger{background:var(--danger);color:#fff}
 
 /* ---- STATUS BAR ---- */
-.status-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;z-index:50}
+.status-bar{position:fixed;bottom:0;left:0;right:0;height:36px;padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;z-index:50}
 .status-online{color:#4ade80}
 .status-offline{color:var(--danger)}
-@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.anim-in{animation:slideUp .3s ease forwards}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.anim-in{animation:slideUp .3s ease both}
 </style>
 </head>
 <body>
@@ -179,40 +204,41 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <!-- GAME SCREEN -->
 <div class="screen" id="gameScreen">
-  <div class="game-header" style="width:100%">
+  <div class="game-header">
     <span class="player-chip" id="headerName">Player</span>
-    <span class="progress-text" id="headerProgress">Q0/0</span>
+    <span class="progress-text" id="headerProgress">Get ready</span>
     <span class="score-badge" id="headerScore">0 pts</span>
   </div>
-  <div class="timer-bar-wrap" style="width:100%">
-    <div class="timer-bar" id="timerBar"></div>
-  </div>
-  <div id="qaArea" style="width:100%">
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar"></div></div>
+  <div class="time-left" id="timeLeft"></div>
+  <div class="banner" id="banner"></div>
+
+  <div id="qaArea" style="display:none">
     <div class="question-area">
       <div class="q-number" id="qNum">QUESTION 1</div>
       <div class="q-text" id="qText">Loading...</div>
     </div>
     <div class="options" id="optionList"></div>
   </div>
+
   <div id="mazeWrap">
-    <div class="maze-head">
+    <div class="question-area" style="width:100%;padding:0">
       <div class="q-number" id="mazeNum">QUESTION 1</div>
-      <div class="maze-question" id="mazeQuestion">Loading...</div>
+      <div class="q-text" id="mazeQuestion" style="font-size:17px;margin-bottom:0">Loading...</div>
     </div>
     <canvas id="gameCanvas" width="352" height="352"></canvas>
     <div class="dpad">
-      <div class="dpad-empty"></div>
-      <button class="dpad-btn" onclick="mazeMove(0,-1)">^</button>
-      <div class="dpad-empty"></div>
-      <button class="dpad-btn" onclick="mazeMove(-1,0)">&lt;</button>
-      <div class="dpad-empty"></div>
-      <button class="dpad-btn" onclick="mazeMove(1,0)">&gt;</button>
-      <div class="dpad-empty"></div>
-      <button class="dpad-btn" onclick="mazeMove(0,1)">v</button>
-      <div class="dpad-empty"></div>
+      <button class="dpad-btn dpad-up" onclick="mazeMove(0,-1)">&uarr;</button>
+      <button class="dpad-btn dpad-left" onclick="mazeMove(-1,0)">&larr;</button>
+      <button class="dpad-btn dpad-down" onclick="mazeMove(0,1)">&darr;</button>
+      <button class="dpad-btn dpad-right" onclick="mazeMove(1,0)">&rarr;</button>
     </div>
+    <div class="maze-hint">Walk to the pad with the answer you think is right. Swipe the maze or use the arrows.</div>
     <div class="maze-legend" id="mazeLegend"></div>
   </div>
+
+  <div class="status-card" id="statusCard"></div>
+
   <div id="endArea" style="display:none;width:100%">
     <div class="end-screen">
       <div class="end-icon" id="endIcon">!</div>
@@ -220,6 +246,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="end-sub" id="endSub">Wait for results</div>
       <div class="score-display" id="endScore">0</div>
       <div style="font-size:12px;color:var(--muted);margin-top:-8px">points</div>
+      <div class="board" id="endBoard"></div>
       <button class="back-lobby-btn" onclick="goBackToLobbies()">Back to lobbies</button>
     </div>
   </div>
@@ -239,506 +266,608 @@ const SERVER = "https://server.ctksystem.com"
 const API = SERVER + "/eduhub"
 const socket = io(SERVER + "/eduhub")
 
-let myId = localStorage.getItem("edu_pid") || "p_" + Math.random().toString(36).substr(2, 9)
+// ---- identity (keys are stored per lobby so joining another lobby never breaks a reconnect) ----
+let myId = localStorage.getItem("edu_pid") || "p_" + Math.random().toString(36).slice(2, 11)
 localStorage.setItem("edu_pid", myId)
-let myKey = localStorage.getItem("edu_pkey") || null
+function getKeys() { try { return JSON.parse(localStorage.getItem("edu_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("edu_pkeys", JSON.stringify(k)) }
+const myKey = () => getKeys()[myLobbyId] || null
 
 let myName = ""
 let myLobbyId = null
 let myLobbyName = ""
-let gState = null
-let mazePos = { x: 1, y: 1 }
-let timerInterval = null
-let answeredThisQ = false
-let eliminatedIdxs = []
-let mazeRoundAnswers = []
-let roundAnswers = []
-const TILE = 32
-let awayNotified = false
 
-// ---- LOBBY LIST ----
+// ---- quiz state ----
+const COLORS = ["#c8f545", "#7c6af7", "#ffa502", "#4ade80", "#ff6b9d", "#60a5fa"]
+const LETTERS = ["A", "B", "C", "D", "E", "F"]
+let Q = null            // current question payload
+let mode = "maze"
+let phase = "idle"      // idle | question | reveal
+let lockedIdx = null    // original answer index the server accepted
+let frozen = false
+let alive = true
+let myScore = 0
+let eliminated = []
+let order = []          // displayed order -> original index
+let deadline = 0
+let duration = 30
+let timerHandle = null
+let allPlayers = []
+let timeouts = []
+
+// ---------- helpers ----------
+function esc(s) { return s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") }
+function $(id) { return document.getElementById(id) }
+function later(fn, ms) { const t = setTimeout(fn, ms); timeouts.push(t); return t }
+function clearLater() { timeouts.forEach(clearTimeout); timeouts = [] }
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
+  $(id).classList.add("active")
+}
+
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+function seededOrder(n, seedStr) {
+  const r = rng(hashStr(seedStr)), a = Array.from({ length: n }, (_, i) => i)
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
+
+// ---------- LOBBY LIST ----------
 async function loadLobbies() {
   try {
     const r = await fetch(API + "/lobbies?type=quiz")
-    const list = await r.json()
-    renderLobbies(list)
+    renderLobbies(await r.json())
   } catch {
-    document.getElementById("lobbyListContainer").innerHTML = '<div class="empty-state">Failed to load lobbies.</div>'
+    $("lobbyListContainer").innerHTML = '<div class="empty-state">Failed to load lobbies. Check your connection.</div>'
   }
 }
 
 const MODE_LABELS = { maze: "Maze", speed: "Speed", survival: "Survival" }
 
 function renderLobbies(list) {
-  const el = document.getElementById("lobbyListContainer")
+  const el = $("lobbyListContainer")
   const open = list.filter(l => l.status !== "ended")
   if (!open.length) {
     el.innerHTML = '<div class="empty-state">No open quiz lobbies right now.<br>Ask your host for a code to join a private one.</div>'
     return
   }
-  el.innerHTML = '<div class="lobby-list">' + open.map(l => `
+  el.innerHTML = open.map(l => `
     <div class="lobby-card">
-      <div class="lobby-icon">${(l.gameMode || "Q").toUpperCase().charAt(0)}</div>
+      <div class="lobby-icon">${esc((l.gameMode || "Q").charAt(0).toUpperCase())}</div>
       <div class="lobby-info">
         <div class="lobby-name">${esc(l.name)}</div>
         <div class="lobby-meta">by ${esc(l.hostUsername)} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""}</div>
       </div>
       <div class="lobby-right">
-        <span class="status-badge badge-${l.status}">${l.status === "live" ? "Live" : "Open"}</span>
-        <span class="mode-tag">${MODE_LABELS[l.gameMode] || l.gameMode || "Quiz"}</span>
-        <button class="join-btn" onclick="selectLobby('${l.id}','${esc(l.name)}')">Join</button>
+        <span class="status-badge badge-${esc(l.status)}">${l.status === "live" ? "Live" : "Open"}</span>
+        <span class="mode-tag">${esc(MODE_LABELS[l.gameMode] || l.gameMode || "Quiz")}</span>
+        <button class="join-btn" data-id="${esc(l.id)}" data-name="${esc(l.name)}">Join</button>
       </div>
-    </div>
-  `).join("") + "</div>"
+    </div>`).join("")
+  el.querySelectorAll(".join-btn").forEach(b => b.onclick = () => selectLobby(b.dataset.id, b.dataset.name))
 }
 
 async function joinByCode() {
-  const code = document.getElementById("codeInput").value.trim().toUpperCase()
-  if (code.length !== 6) { showNotif("Enter a 6-character code", ""); return }
+  const code = $("codeInput").value.trim().toUpperCase()
+  if (code.length !== 6) { showNotif("Enter a 6-character code", "danger"); return }
   try {
     const r = await fetch(API + "/lobbies/code/" + code)
-    if (!r.ok) { showNotif("Lobby not found", ""); return }
+    if (!r.ok) { showNotif("Lobby not found", "danger"); return }
     const l = await r.json()
-    if (l.type !== "quiz") { showNotif("That code is for a bingo lobby, not a quiz", ""); return }
+    if (l.type === "bingo") { showNotif("That code is for bingo - open the bingo page", "danger"); return }
+    if (l.type === "party") { showNotif("That code is for a party game - open the party page", "danger"); return }
     selectLobby(l.id, l.name)
-  } catch { showNotif("Could not look up that code", "") }
+  } catch { showNotif("Could not look up that code", "danger") }
 }
 
 function selectLobby(id, name) {
   myLobbyId = id
   myLobbyName = name
-  document.getElementById("selectedLobbyLabel").textContent = name
+  $("selectedLobbyLabel").textContent = name
   show("nameScreen")
-  document.getElementById("nameInput").focus()
+  $("nameInput").value = localStorage.getItem("edu_name") || ""
+  $("nameInput").focus()
 }
 
-function goBack() {
-  myLobbyId = null
-  show("lobbyScreen")
-}
+function goBack() { myLobbyId = null; show("lobbyScreen") }
 
 function goBackToLobbies() {
-  myLobbyId = null
-  myName = ""
-  gState = null
+  leaveLocal()
   loadLobbies()
   show("lobbyScreen")
+}
+
+function leaveLocal() {
+  myLobbyId = null
+  myName = ""
+  resetQuiz()
 }
 
 function joinLobby() {
-  const name = document.getElementById("nameInput").value.trim()
-  if (!name) { document.getElementById("nameInput").focus(); return }
+  const name = $("nameInput").value.trim()
+  if (!name || !myLobbyId) { $("nameInput").focus(); return }
   myName = name
-  document.getElementById("waitName").textContent = "Hey, " + name + "!"
-  document.getElementById("headerName").textContent = name
-  socket.emit("lobby_join", { lobbyId: myLobbyId, name, playerId: myId, playerKey: myKey })
+  localStorage.setItem("edu_name", name)
+  $("waitName").textContent = "Hey, " + name + "!"
+  $("headerName").textContent = name
+  sendJoin()
   show("waitScreen")
 }
 
-// ---- AWAY TRACKING ----
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && myName && myLobbyId) {
-    awayNotified = true
-  } else if (awayNotified) {
-    awayNotified = false
-  }
-})
-
-// ---- SCREENS ----
-function show(id) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
-  document.getElementById(id).classList.add("active")
+function sendJoin() {
+  socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey() })
 }
 
-// ---- ROUND STATE ----
-function resetRound() {
-  answeredThisQ = false
-  eliminatedIdxs = []
-  mazePos = { x: 1, y: 1 }
-  mazeRoundAnswers = []
-  roundAnswers = []
-}
-
-function shuffle(arr) {
-  const c = [...arr]
-  for (let i = c.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [c[i], c[j]] = [c[j], c[i]]
-  }
-  return c
-}
-
-function ensureMazeRoundAnswers(answers) {
-  if (mazeRoundAnswers.length === answers.length && answers.length) return mazeRoundAnswers
-  mazeRoundAnswers = shuffle(answers.map((a, i) => ({ originalIndex: i, text: a?.text || "" })))
-  return mazeRoundAnswers
-}
-
-function ensureRoundAnswers(answers) {
-  if (roundAnswers.length === answers.length && answers.length) return roundAnswers
-  roundAnswers = shuffle((answers || []).map((a, i) => ({ originalIndex: i, text: a?.text || "" })))
-  return roundAnswers
-}
-
-function getDisplayedIdx(originalIndex) {
-  return roundAnswers.findIndex(a => a.originalIndex === originalIndex)
-}
-
-// ---- SOCKET ----
+// ---------- SOCKET ----------
 socket.on("connect", () => {
-  document.getElementById("statusDot").className = "status-online"
-  document.getElementById("statusText").textContent = "Connected"
-  if (myName && myLobbyId) socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey })
-})
-
-socket.on("player_key", ({ playerKey }) => {
-  myKey = playerKey
-  localStorage.setItem("edu_pkey", playerKey)
+  $("statusDot").className = "status-online"
+  $("statusText").textContent = "Connected"
+  if (myName && myLobbyId) sendJoin()
 })
 
 socket.on("disconnect", () => {
-  document.getElementById("statusDot").className = "status-offline"
-  document.getElementById("statusText").textContent = "Reconnecting..."
+  $("statusDot").className = "status-offline"
+  $("statusText").textContent = "Reconnecting..."
 })
 
-socket.on("quiz_state", data => {
-  gState = data
-  updateHeader(data.player)
-  if (!data.gameStarted) {
+socket.on("connect_error", () => {
+  $("statusDot").className = "status-offline"
+  $("statusText").textContent = "Can't reach the server"
+})
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && myName && myLobbyId && socket.connected) socket.emit("resync", { lobbyId: myLobbyId, playerId: myId })
+})
+
+socket.on("player_key", ({ playerKey, lobbyId }) => setKey(lobbyId || myLobbyId, playerKey))
+
+socket.on("error_msg", msg => {
+  showNotif(msg, "danger")
+  if (/not found|ended|full|Authentication/i.test(msg) && $("waitScreen").classList.contains("active")) {
+    leaveLocal(); loadLobbies(); show("lobbyScreen")
+  }
+})
+
+socket.on("players_update", list => {
+  allPlayers = list || []
+  const me = allPlayers.find(p => p.playerId === myId)
+  if (me) { myScore = me.score || 0; alive = me.alive !== false; updateHeader() }
+})
+
+socket.on("quiz_state", snap => {
+  mode = snap.gameType || mode
+  alive = snap.player.alive !== false
+  myScore = snap.player.score || 0
+  updateHeader()
+  if (!snap.gameStarted || snap.phase === "idle" || !snap.question) {
+    clearGameUI()
     show("waitScreen")
-    if (myName) document.getElementById("waitName").textContent = "Hey, " + myName + "!"
+    $("waitName").textContent = "Hey, " + myName + "!"
     return
   }
-  resetRound()
-  enterGameMode(data)
-})
-
-socket.on("quiz_started", ({ gameType }) => {
-  if (gState) { gState.gameType = gameType; gState.gameStarted = true; if (gState.player) { gState.player.score = 0; gState.player.progress = 0; gState.player.alive = true } }
-  else gState = { gameType, player: { score: 0, progress: 0, alive: true }, gameStarted: true, config: {} }
-  resetRound()
-  updateHeader(gState.player)
-  document.getElementById("headerProgress").textContent = "Q0/0"
   show("gameScreen")
-  showNotif("Game started: " + gameType.toUpperCase(), "event")
-  document.getElementById("qaArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("endArea").style.display = "none"
+  frozen = !!snap.frozen
+  lockedIdx = snap.locked
+  applyQuestion(snap.question)
+  if (snap.phase === "reveal" && snap.reveal) {
+    applyReveal(snap.reveal)
+    if (snap.result) applyResult(snap.result, false)
+  } else if (frozen) showStatus("ice", "You're frozen this question", "Sit back - you can't answer this one.")
+  else if (lockedIdx != null) showStatus("", "Answer locked in", "Waiting for the others...")
+  else if (!alive && mode === "survival") showStatus("bad", "You're out!", "Watch the others battle it out.")
 })
 
-socket.on("quiz_question", ({ question, answers, index, total }) => {
-  resetRound()
-  if (gState?.gameType === "survival" && gState?.player?.alive === false) { showEliminated(gState.player.score || 0); return }
-  if (gState?.player) gState.player.progress = index
-  if (gState?.gameType === "maze") {
-    renderMazePrompt({ question, answers: Array.isArray(answers) ? answers : [] }, index, total)
-    document.getElementById("qaArea").style.display = "none"
-    document.getElementById("mazeWrap").style.display = "flex"
-    document.getElementById("endArea").style.display = "none"
-    drawMaze(null)
-    return
-  }
-  showQuestion(question, answers, index, total)
+socket.on("quiz_started", ({ gameType, total }) => {
+  resetQuiz()
+  mode = gameType
+  alive = true
+  myScore = 0
+  updateHeader()
+  show("gameScreen")
+  $("headerProgress").textContent = "Get ready"
+  showStatus("", "Get ready!", (MODE_LABELS[gameType] || "Quiz") + " mode" + (total ? " - " + total + " questions" : ""))
 })
 
-socket.on("quiz_reveal", ({ correctIndex }) => {
-  const shown = gState?.gameType === "maze" ? correctIndex : getDisplayedIdx(correctIndex)
-  highlightCorrect(shown >= 0 ? shown : correctIndex)
+socket.on("quiz_question", payload => {
+  resetRoundVisuals()
+  frozen = false
+  lockedIdx = null
+  mode = payload.mode || mode
+  show("gameScreen")
+  applyQuestion(payload)
+  if (!alive && mode === "survival") showStatus("bad", "You're out!", "Watch the others battle it out.")
+})
+
+socket.on("quiz_frozen", () => {
+  frozen = true
+  showStatus("ice", "You're frozen this question", "Sit back - you can't answer this one.")
+  lockInputs()
+})
+
+socket.on("quiz_frozen_next", () => showNotif("You will be frozen next question!", "event"))
+
+socket.on("quiz_locked", ({ index }) => {
+  lockedIdx = index
+  markSelected()
+  lockInputs()
+  showStatus("", "Answer locked in", "Waiting for the others...")
 })
 
 socket.on("quiz_hint", ({ eliminateIndex }) => {
-  const shown = gState?.gameType === "maze" ? eliminateIndex : getDisplayedIdx(eliminateIndex)
-  eliminatedIdxs.push(shown)
-  document.querySelectorAll(".option-btn").forEach((b, i) => { if (i === shown) b.classList.add("eliminated") })
-  showNotif("Hint: one wrong answer eliminated", "event")
+  if (!eliminated.includes(eliminateIndex)) eliminated.push(eliminateIndex)
+  if (Q) { Q.eliminated = eliminated; paintEliminated() }
+  showNotif("Hint: one wrong answer removed", "event")
 })
 
-socket.on("quiz_timer", ({ endsAt, duration }) => {
-  startTimerBar(endsAt, duration)
+socket.on("quiz_reveal", r => { applyReveal(r) })
+
+socket.on("quiz_result", r => { applyResult(r, true) })
+
+socket.on("quiz_info", ({ message }) => showNotif(message, "info"))
+
+socket.on("event_applied", ev => {
+  const b = $("banner")
+  b.className = "banner show " + (ev.type === "chaos" ? "chaos" : "boost")
+  b.textContent = ev.name + (ev.info ? " - " + ev.info : "")
+  later(() => b.classList.remove("show"), 6000)
 })
 
-socket.on("broadcast", ({ message }) => {
-  showNotif(message, "broadcast")
-})
+socket.on("broadcast", ({ message }) => showNotif(message, "broadcast"))
 
-socket.on("event_applied", ({ eventId }) => {
-  const names = {
-    double_points: "2x Points active!",
-    freeze_top: "Leader frozen!",
-    random_score: "Scores shuffled!",
-    speed_bonus: "Speed bonus active!",
-    reveal_hint: "Hint incoming!",
-    steal_points: "Points stolen!",
-    bonus_question: "3x Bonus Round!",
-    invert_scores: "Scores flipped!"
-  }
-  showNotif(names[eventId] || "Event fired", "event")
-})
+socket.on("quiz_game_complete", ({ players }) => showFinal(players))
 
-socket.on("quiz_result", ({ correct, alive, score, nextIndex, mode }) => {
-  if (gState?.player) { gState.player.score = score; if (typeof nextIndex === "number") gState.player.progress = nextIndex }
-  updateHeader({ score })
-  showResultFeedback(correct)
-  if (mode === "survival" && gState?.player) {
-    gState.player.alive = alive
-    if (!alive) showEliminated(score)
-  }
-  if (mode === "maze") setTimeout(() => { mazePos = { x: 1, y: 1 }; drawMaze(null) }, 1200)
-})
-
-socket.on("quiz_game_complete", () => {
-  showFinished(gState?.player?.score || 0)
-})
-
-socket.on("game_ended", () => {
-  gState = null
-  show("waitScreen")
-  document.getElementById("waitName").textContent = myName ? "Hey, " + myName + "!" : "Game Over!"
-  showNotif("Session ended by host", "event")
+socket.on("game_ended", ({ reason } = {}) => {
+  leaveLocal()
+  showNotif(reason || "Session ended by host", "event")
+  loadLobbies()
+  show("lobbyScreen")
 })
 
 socket.on("kicked", () => {
-  gState = null
-  myName = ""
-  show("lobbyScreen")
-  showNotif("You have been removed from the lobby.", "")
+  leaveLocal()
+  showNotif("You have been removed from the lobby.", "danger")
   loadLobbies()
+  show("lobbyScreen")
 })
 
-socket.on("error_msg", msg => {
-  showNotif(msg, "")
-})
-
-socket.on("players_update", () => {})
-
-// ---- GAME UI ----
-function updateHeader(player) {
-  document.getElementById("headerScore").textContent = (player?.score || 0) + " pts"
+// ---------- QUIZ UI ----------
+function updateHeader() {
+  $("headerScore").textContent = myScore + " pts"
 }
 
-function enterGameMode(data) {
-  const mode = data.gameType
-  const player = data.player
-  updateHeader(player)
-  show("gameScreen")
-  document.getElementById("endArea").style.display = "none"
-  if (!player.alive) { showEliminated(player.score); return }
+function resetQuiz() {
+  Q = null; phase = "idle"; lockedIdx = null; frozen = false; alive = true; myScore = 0
+  eliminated = []; order = []; mazeAnswered = false
+  clearGameUI()
+}
+
+function clearGameUI() {
+  clearLater()
+  stopTimer()
+  $("qaArea").style.display = "none"
+  $("mazeWrap").style.display = "none"
+  $("endArea").style.display = "none"
+  $("statusCard").className = "status-card"
+  $("banner").className = "banner"
+  $("timeLeft").textContent = ""
+  $("timerBar").style.width = "100%"
+}
+
+function resetRoundVisuals() {
+  $("statusCard").className = "status-card"
+  $("endArea").style.display = "none"
+  eliminated = []
+  mazeAnswered = false
+}
+
+function showStatus(kind, title, sub) {
+  const c = $("statusCard")
+  c.className = "status-card show " + (kind || "")
+  c.innerHTML = esc(title) + (sub ? "<small>" + esc(sub) + "</small>" : "")
+}
+
+function applyQuestion(q) {
+  Q = q
+  phase = "question"
+  eliminated = (q.eliminated || []).slice()
+  order = seededOrder(q.answers.length, myId + "|" + myLobbyId + "|" + q.index)
+  $("endArea").style.display = "none"
+  const label = "QUESTION " + (q.index + 1) + (q.total ? " / " + q.total : "")
+  $("headerProgress").textContent = "Q" + (q.index + 1) + (q.total ? "/" + q.total : "")
   if (mode === "maze") {
-    document.getElementById("qaArea").style.display = "none"
-    document.getElementById("mazeWrap").style.display = "flex"
-    const qs = data.config?.maze || []
-    const q = qs[player.progress]
-    if (q) { renderMazePrompt(q, player.progress, qs.length); drawMaze(null) }
-    else showFinished(player.score)
+    $("qaArea").style.display = "none"
+    $("mazeWrap").style.display = "flex"
+    $("mazeNum").textContent = label
+    $("mazeQuestion").textContent = q.question
+    buildMaze()
+    paintLegend()
+    drawMaze()
   } else {
-    document.getElementById("qaArea").style.display = "block"
-    document.getElementById("mazeWrap").style.display = "none"
-    const qs = data.config?.[mode] || []
-    const q = qs[player.progress]
-    if (q) showQuestion(q.question, q.answers.map(a => ({ text: a.text })), player.progress, qs.length)
-    else showFinished(player.score)
+    $("mazeWrap").style.display = "none"
+    $("qaArea").style.display = "block"
+    $("qNum").textContent = label
+    $("qText").textContent = q.question
+    $("optionList").innerHTML = order.map((orig, i) => `
+      <button class="option-btn anim-in" data-orig="${orig}" style="animation-delay:${i * .05}s">
+        <span class="option-letter">${LETTERS[i]}</span><span>${esc(q.answers[orig].text)}</span><span class="option-count"></span>
+      </button>`).join("")
+    $("optionList").querySelectorAll(".option-btn").forEach(b => b.onclick = () => sendAnswer(+b.dataset.orig))
+    paintEliminated()
+    markSelected()
   }
+  if (q.endsAt) startTimer(q.endsAt - q.serverNow, q.duration)
+  if (frozen || !alive || lockedIdx != null) lockInputs()
 }
 
-function showQuestion(question, answers, index, total) {
-  const shuffled = ensureRoundAnswers(answers)
-  document.getElementById("qaArea").style.display = "block"
-  document.getElementById("endArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("qNum").textContent = "QUESTION " + (index + 1) + (total ? " / " + total : "")
-  document.getElementById("headerProgress").textContent = "Q" + (index + 1) + (total ? "/" + total : "")
-  document.getElementById("qText").textContent = question
-  document.getElementById("qText").classList.add("anim-in")
-  const letters = ["A","B","C","D","E","F"]
-  document.getElementById("optionList").innerHTML = shuffled.map((a, i) => `
-    <button class="option-btn anim-in" id="opt_${i}" onclick="sendAnswer(${i})" style="animation-delay:${i*.06}s">
-      <span class="option-letter">${letters[i]}</span>${a.text}
-    </button>
-  `).join("")
+function paintEliminated() {
+  document.querySelectorAll(".option-btn").forEach(b => b.classList.toggle("eliminated", eliminated.includes(+b.dataset.orig)))
+  paintLegend()
+  if (mode === "maze" && maze) drawMaze()
 }
 
-function renderMazePrompt(q, index, total) {
-  const answers = Array.isArray(q.answers) ? q.answers : []
-  const shuffled = ensureMazeRoundAnswers(answers)
-  const letters = ["A","B","C","D","E","F"]
-  document.getElementById("mazeNum").textContent = "QUESTION " + (index + 1) + (total ? " / " + total : "")
-  document.getElementById("headerProgress").textContent = "Q" + (index + 1) + (total ? "/" + total : "")
-  document.getElementById("mazeQuestion").textContent = q.question || "Pick the right path"
-  document.getElementById("mazeLegend").innerHTML = shuffled.map((a, i) => `
-    <div class="maze-answer">
-      <span class="maze-answer-label">${letters[i]}</span>
-      <span class="maze-answer-text">${esc(a.text)}</span>
-    </div>
-  `).join("")
+function markSelected() {
+  document.querySelectorAll(".option-btn").forEach(b => b.classList.toggle("selected", lockedIdx != null && +b.dataset.orig === lockedIdx))
 }
 
-function sendAnswer(idx) {
-  if (answeredThisQ) return
-  if (gState?.gameType === "survival" && gState?.player?.alive === false) { showEliminated(gState.player.score || 0); return }
-  answeredThisQ = true
-  const mode = gState?.gameType || "maze"
-  const answerIndex = mode === "maze" ? idx : (roundAnswers[idx]?.originalIndex ?? idx)
-  const btn = document.getElementById("opt_" + idx)
-  if (btn) btn.classList.add("selected")
-  document.querySelectorAll(".option-btn").forEach(b => b.style.pointerEvents = "none")
-  socket.emit("quiz_answer", { lobbyId: myLobbyId, playerId: myId, answerIndex })
+function lockInputs() {
+  document.querySelectorAll(".option-btn").forEach(b => b.classList.add("locked"))
 }
 
-function showResultFeedback(correct) {
-  const overlay = document.getElementById("resultOverlay")
-  const bubble = document.getElementById("resultBubble")
-  bubble.textContent = correct ? "Correct!" : "Wrong"
-  bubble.className = "result-bubble " + (correct ? "correct" : "wrong")
-  overlay.classList.add("show")
-  setTimeout(() => overlay.classList.remove("show"), 1000)
+function sendAnswer(orig) {
+  if (lockedIdx != null || frozen || phase !== "question") return
+  if (!alive && mode === "survival") return
+  if (eliminated.includes(orig)) return
+  lockedIdx = orig // optimistic; the server confirms with quiz_locked
+  markSelected()
+  lockInputs()
+  socket.emit("quiz_answer", { lobbyId: myLobbyId, playerId: myId, answerIndex: orig })
 }
 
-function highlightCorrect(idx) {
-  document.querySelectorAll(".option-btn").forEach((b, i) => {
-    if (i === idx) b.classList.add("correct")
-    else if (b.classList.contains("selected")) b.classList.add("wrong")
-    else b.classList.add("eliminated")
+function applyReveal(r) {
+  phase = "reveal"
+  stopTimer()
+  $("timeLeft").textContent = ""
+  $("timerBar").style.width = "0%"
+  document.querySelectorAll(".option-btn").forEach(b => {
+    const orig = +b.dataset.orig
+    b.classList.add("locked")
+    b.classList.remove("selected")
+    if (orig === r.correctIndex) b.classList.add("correct")
+    else if (orig === lockedIdx) b.classList.add("wrong")
+    else b.classList.add("dim")
+    const c = b.querySelector(".option-count")
+    if (c && r.counts) c.textContent = r.counts[orig] || 0
   })
+  mazeAnswered = true
+  paintLegend(r.correctIndex)
+  drawMaze()
 }
 
-function showEliminated(score) {
-  show("gameScreen")
-  answeredThisQ = true
-  document.querySelectorAll(".option-btn").forEach(b => b.style.pointerEvents = "none")
-  document.getElementById("qaArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("endArea").style.display = "block"
-  document.getElementById("endIcon").textContent = "X"
-  document.getElementById("endTitle").textContent = "Eliminated!"
-  document.getElementById("endSub").textContent = "You answered wrong."
-  document.getElementById("endScore").textContent = score
-}
-
-function showFinished(score) {
-  document.getElementById("qaArea").style.display = "none"
-  document.getElementById("mazeWrap").style.display = "none"
-  document.getElementById("endArea").style.display = "block"
-  document.getElementById("endIcon").textContent = "!"
-  document.getElementById("endTitle").textContent = "Finished!"
-  document.getElementById("endSub").textContent = "All questions complete"
-  document.getElementById("endScore").textContent = score
-}
-
-// ---- MAZE ----
-function drawMaze(map) {
-  if (!map && gState?.config?.maze) {
-    const q = gState.config.maze[gState.player?.progress || 0]
-    if (q) renderMazePrompt(q, gState.player?.progress || 0, gState.config.maze.length)
+function applyResult(r, animate) {
+  myScore = r.score
+  alive = r.alive !== false
+  updateHeader()
+  if (r.frozen) showStatus("ice", "You were frozen", "No points this question.")
+  else if (!r.answered) showStatus("bad", mode === "survival" && !alive ? "Too slow - you're out!" : "No answer", mode === "survival" && !alive ? "Watch the others battle it out." : "You ran out of time.")
+  else if (r.correct) showStatus("good", "Correct! +" + r.gained, r.mult > 1 ? r.mult + "x multiplier applied" : "")
+  else showStatus("bad", mode === "survival" ? "Wrong - you're out!" : "Wrong answer", mode === "survival" ? "Watch the others battle it out." : "")
+  if (animate && r.answered && !r.frozen) {
+    const o = $("resultOverlay"), b = $("resultBubble")
+    b.className = "result-bubble " + (r.correct ? "correct" : "wrong")
+    b.innerHTML = r.correct ? "Correct!<small>+" + r.gained + "</small>" : "Wrong"
+    o.classList.add("show")
+    later(() => o.classList.remove("show"), 1100)
   }
-  const canvas = document.getElementById("gameCanvas")
-  const ctx = canvas.getContext("2d")
-  const t = TILE
-  const m = buildMockMaze()
-  canvas.width = m[0].length * t
-  canvas.height = m.length * t
+}
+
+function showFinal(players) {
+  stopTimer()
+  clearGameUI()
+  show("gameScreen")
+  $("headerProgress").textContent = "Final"
+  const list = (players || []).slice().sort((a, b) => b.score - a.score)
+  const rank = list.findIndex(p => p.playerId === myId) + 1
+  const me = list.find(p => p.playerId === myId)
+  myScore = me ? me.score : myScore
+  updateHeader()
+  $("endArea").style.display = "block"
+  $("endIcon").textContent = rank === 1 ? "1st" : rank ? "#" + rank : "!"
+  $("endTitle").textContent = rank === 1 ? "You won!" : "Finished!"
+  $("endSub").textContent = rank ? "You placed " + rank + " of " + list.length : "All questions complete"
+  $("endScore").textContent = myScore
+  $("endBoard").innerHTML = list.slice(0, 8).map((p, i) => `
+    <div class="board-row ${p.playerId === myId ? "me" : ""}">
+      <span class="board-rank">${i + 1}</span><span class="board-name">${esc(p.name)}</span><span class="board-score">${p.score}</span>
+    </div>`).join("")
+}
+
+// ---------- TIMER ----------
+function startTimer(remainingMs, dur) {
+  stopTimer()
+  duration = dur || 30
+  deadline = Date.now() + remainingMs
+  const tick = () => {
+    const left = deadline - Date.now()
+    const pct = Math.max(0, Math.min(100, left / (duration * 1000) * 100))
+    $("timerBar").style.width = pct + "%"
+    $("timerBar").className = "timer-bar" + (pct < 25 ? " danger" : "")
+    $("timeLeft").textContent = left > 0 ? Math.ceil(left / 1000) + "s" : "0s"
+    if (left <= 0) stopTimer()
+  }
+  tick()
+  timerHandle = setInterval(tick, 100)
+}
+function stopTimer() { if (timerHandle) clearInterval(timerHandle); timerHandle = null }
+
+// ---------- MAZE ----------
+// A fresh maze per question (seeded, so a reconnect shows the same one). Every answer sits on a
+// pad at the end of a corridor and every pad is reachable from the start by construction.
+const TILE = 32
+const GRID = 5                 // cells per side -> (2*GRID+1) tiles per side
+let maze = null                // 2D array: 1 wall, 0 floor, "A".."F" answer pad
+let pos = { x: 1, y: 1 }
+let padOf = {}                 // letter -> original answer index
+let mazeAnswered = false
+
+function buildMaze() {
+  const size = 2 * GRID + 1
+  const n = Q.answers.length
+  // Pads only go on dead ends (a pad in a corridor would cut off whatever is behind it), so
+  // re-roll the maze until it has enough dead ends for every answer.
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const r = rng(hashStr(myId + "|maze|" + myLobbyId + "|" + (Q ? Q.index : 0) + "|" + attempt))
+    const m = Array.from({ length: size }, () => Array(size).fill(1))
+    const stack = [[0, 0]]
+    const seen = new Set(["0,0"])
+    m[1][1] = 0
+    while (stack.length) {
+      const [cx, cy] = stack[stack.length - 1]
+      const nbrs = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .map(([dx, dy]) => [cx + dx, cy + dy, dx, dy])
+        .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < GRID && ny < GRID && !seen.has(nx + "," + ny))
+      if (!nbrs.length) { stack.pop(); continue }
+      const [nx, ny, dx, dy] = nbrs[Math.floor(r() * nbrs.length)]
+      seen.add(nx + "," + ny)
+      m[2 * cy + 1 + dy][2 * cx + 1 + dx] = 0   // carve the wall between
+      m[2 * ny + 1][2 * nx + 1] = 0
+      stack.push([nx, ny])
+    }
+    const dist = { "1,1": 0 }
+    const q = [[1, 1]]
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i]
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy
+        if (m[ny][nx] === 0 && dist[nx + "," + ny] === undefined) { dist[nx + "," + ny] = dist[x + "," + y] + 1; q.push([nx, ny]) }
+      }
+    }
+    const ends = []
+    for (let cy = 0; cy < GRID; cy++) for (let cx = 0; cx < GRID; cx++) {
+      const x = 2 * cx + 1, y = 2 * cy + 1
+      if (x === 1 && y === 1) continue
+      const deg = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => m[y + dy] && m[y + dy][x + dx] === 0).length
+      if (deg === 1) ends.push({ x, y, d: dist[x + "," + y] })
+    }
+    if (ends.length < n && attempt < 59) continue
+    ends.sort((a, b) => b.d - a.d)
+    padOf = {}
+    ends.slice(0, n).forEach((c, i) => { m[c.y][c.x] = LETTERS[i]; padOf[LETTERS[i]] = order[i] })
+    maze = m
+    pos = { x: 1, y: 1 }
+    return
+  }
+}
+
+function paintLegend(correctOrig) {
+  const el = $("mazeLegend")
+  if (!Q || mode !== "maze") { el.innerHTML = ""; return }
+  el.innerHTML = order.map((orig, i) => `
+    <div class="maze-answer ${eliminated.includes(orig) ? "eliminated" : ""}" style="${orig === correctOrig ? "border-color:#4ade80" : ""}">
+      <span class="maze-answer-label" style="background:${COLORS[i]}">${LETTERS[i]}</span>
+      <span class="maze-answer-text">${esc(Q.answers[orig].text)}</span>
+    </div>`).join("")
+}
+
+function drawMaze() {
+  if (!maze) return
+  const canvas = $("gameCanvas"), ctx = canvas.getContext("2d"), t = TILE
+  canvas.width = maze[0].length * t
+  canvas.height = maze.length * t
   ctx.fillStyle = "#0d0d18"
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  m.forEach((row, y) => {
-    row.forEach((tile, x) => {
-      if (tile === 1) {
-        ctx.fillStyle = "#3a3a5a"
-        ctx.fillRect(x*t+1, y*t+1, t-2, t-2)
-      } else if (/[A-F]/.test(tile)) {
-        ctx.fillStyle = "#162500"
-        ctx.fillRect(x*t+1, y*t+1, t-2, t-2)
-        ctx.fillStyle = "#c8f545"
-        ctx.font = "bold 13px Space Mono, monospace"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.fillText(tile, x*t+t/2, y*t+t/2)
-      }
-    })
-  })
-  ctx.fillStyle = "#7c6af7"
-  ctx.fillRect(mazePos.x*t+6, mazePos.y*t+6, t-12, t-12)
-}
-
-function buildMockMaze() {
-  const size = 11
-  const m = Array(size).fill().map(() => Array(size).fill(0))
-  for (let i = 0; i < size; i++) { m[0][i] = m[size-1][i] = m[i][0] = m[i][size-1] = 1 }
-  [[2,2],[2,3],[2,6],[3,5],[4,2],[4,7],[5,3],[5,6],[6,4],[6,7],[7,2],[7,5],[8,3],[8,6],[3,3]].forEach(([y,x]) => { if (!(y===1&&x===1)) m[y][x]=1 })
-  const count = Math.min(mazeRoundAnswers.length || 3, 6)
-  const labels = ["A","B","C","D","E","F"].slice(0, count)
-  [[2,9],[4,9],[6,9],[8,9],[9,3],[9,5]].forEach(([y,x], i) => { if (labels[i]) m[y][x] = labels[i] })
-  return m
-}
-
-function mazeMove(dx, dy) {
-  const m = buildMockMaze()
-  const nx = mazePos.x+dx, ny = mazePos.y+dy
-  if (m[ny] && m[ny][nx] !== 1) {
-    mazePos = { x: nx, y: ny }
-    const tile = m[ny][nx]
-    if (/[A-F]/.test(tile)) {
-      const li = tile.charCodeAt(0) - 65
-      const orig = mazeRoundAnswers[li]?.originalIndex
-      if (orig === undefined) return
-      sendAnswer(orig)
-      mazePos = { x: 1, y: 1 }
+  maze.forEach((row, y) => row.forEach((tile, x) => {
+    if (tile === 1) {
+      ctx.fillStyle = "#3a3a5a"
+      ctx.fillRect(x * t, y * t, t, t)
+    } else if (typeof tile === "string") {
+      const i = LETTERS.indexOf(tile), orig = padOf[tile]
+      const dead = eliminated.includes(orig)
+      ctx.globalAlpha = dead ? 0.25 : 1
+      ctx.fillStyle = COLORS[i]
+      ctx.beginPath(); ctx.arc(x * t + t / 2, y * t + t / 2, t / 2 - 3, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = "#0a0a0f"
+      ctx.font = "bold 15px Space Mono, monospace"
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"
+      ctx.fillText(tile, x * t + t / 2, y * t + t / 2 + 1)
+      ctx.globalAlpha = 1
     }
-    drawMaze(null)
-  }
+  }))
+  ctx.fillStyle = frozen || lockedIdx != null ? "#6b6b8a" : "#7c6af7"
+  ctx.beginPath(); ctx.arc(pos.x * t + t / 2, pos.y * t + t / 2, t / 2 - 7, 0, Math.PI * 2); ctx.fill()
 }
+
+function mazeStep(dx, dy) {
+  if (!maze || mazeAnswered || lockedIdx != null || frozen || phase !== "question" || (!alive && mode === "survival")) return "blocked"
+  const nx = pos.x + dx, ny = pos.y + dy
+  if (!maze[ny] || maze[ny][nx] === undefined || maze[ny][nx] === 1) return "blocked"
+  pos = { x: nx, y: ny }
+  const tile = maze[ny][nx]
+  if (typeof tile === "string") {
+    const orig = padOf[tile]
+    if (eliminated.includes(orig)) return "pad-dead"   // eliminated pads are just floor
+    sendAnswer(orig)
+    return "pad"
+  }
+  return "ok"
+}
+
+function mazeMove(dx, dy) { mazeStep(dx, dy); drawMaze() }
+
+// Slide along a corridor until something interesting (wall, turn, junction or pad)
+function mazeSlide(dx, dy) {
+  let guard = 0
+  while (guard++ < 40) {
+    const r = mazeStep(dx, dy)
+    if (r !== "ok" && r !== "pad-dead") break
+    const free = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([ax, ay]) => !(ax === -dx && ay === -dy) && maze[pos.y + ay] && maze[pos.y + ay][pos.x + ax] !== 1)
+    if (free.length !== 1 || free[0][0] !== dx || free[0][1] !== dy) break
+  }
+  drawMaze()
+}
+
+document.addEventListener("keydown", e => {
+  if (!$("gameScreen").classList.contains("active") || mode !== "maze") return
+  const k = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] }[e.key]
+  if (k) { e.preventDefault(); mazeMove(k[0], k[1]) }
+})
 
 let touchStart = null
-document.getElementById("gameCanvas").addEventListener("touchstart", e => {
-  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-}, { passive: true })
-document.getElementById("gameCanvas").addEventListener("touchend", e => {
+$("gameCanvas").addEventListener("touchstart", e => { touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY } }, { passive: true })
+$("gameCanvas").addEventListener("touchend", e => {
   if (!touchStart) return
   const dx = e.changedTouches[0].clientX - touchStart.x
   const dy = e.changedTouches[0].clientY - touchStart.y
-  if (Math.abs(dx) > Math.abs(dy)) mazeMove(dx > 0 ? 1 : -1, 0)
-  else mazeMove(0, dy > 0 ? 1 : -1)
   touchStart = null
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return
+  if (Math.abs(dx) > Math.abs(dy)) mazeSlide(dx > 0 ? 1 : -1, 0)
+  else mazeSlide(0, dy > 0 ? 1 : -1)
 }, { passive: true })
 
-// ---- TIMER BAR ----
-function startTimerBar(endsAt, duration) {
-  if (timerInterval) clearInterval(timerInterval)
-  const bar = document.getElementById("timerBar")
-  timerInterval = setInterval(() => {
-    const remaining = endsAt - Date.now()
-    const pct = Math.max(0, (remaining / (duration * 1000)) * 100)
-    bar.style.width = pct + "%"
-    bar.className = "timer-bar" + (pct < 25 ? " danger" : "")
-    if (pct <= 0) clearInterval(timerInterval)
-  }, 200)
-}
-
-// ---- NOTIF ----
+// ---------- NOTIF ----------
+let notifTimer = null
 function showNotif(msg, type) {
-  const el = document.getElementById("notif")
+  const el = $("notif")
   el.textContent = msg
   el.className = "notif " + (type || "") + " show"
-  setTimeout(() => el.classList.remove("show"), 3500)
+  clearTimeout(notifTimer)
+  notifTimer = setTimeout(() => el.classList.remove("show"), 3500)
 }
 
-function esc(s) {
-  if (!s) return ""
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
-}
-
-// ---- START ----
+// ---------- START ----------
 loadLobbies()
 
 const params = new URLSearchParams(location.search)
 if (params.get("lid")) {
-  fetch(API + "/lobbies/" + params.get("lid")).then(r => r.json()).then(l => {
+  fetch(API + "/lobbies/" + encodeURIComponent(params.get("lid"))).then(r => r.json()).then(l => {
     if (l.type === "quiz") selectLobby(l.id, l.name)
   }).catch(() => {})
 } else if (params.get("code")) {
-  document.getElementById("codeInput").value = params.get("code").toUpperCase()
+  $("codeInput").value = params.get("code").toUpperCase()
   joinByCode()
 }
 
-document.getElementById("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") joinLobby() })
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") joinLobby() })
 </script>
 </body>
 </html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Party Games</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--card:#1c1c28;--border:#2a2a3d;
+  --accent:#ff6b9d;--accent2:#c8f545;--violet:#7c6af7;--danger:#ff4757;--warn:#ffa502;--good:#4ade80;
+  --text:#e8e8f0;--muted:#6b6b8a;
+}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:40px;
+  background-image:radial-gradient(circle at 10% 0%,#ff6b9d14,transparent 40%),radial-gradient(circle at 90% 100%,#7c6af714,transparent 45%);background-attachment:fixed}
+.screen{display:none;min-height:calc(100vh - 40px);flex-direction:column}
+.screen.active{display:flex}
+button{font-family:'Syne',sans-serif}
+
+/* lobby list / name */
+#lobbyScreen{padding:0 0 40px}
+.lobby-header{padding:20px 16px 0}
+.lobby-title{font-size:28px;font-weight:800;margin-bottom:4px}
+.lobby-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.lobby-list{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.lobby-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.lobby-card:hover{border-color:var(--accent)}
+.lobby-icon{width:40px;height:40px;border-radius:10px;background:#2a1020;display:flex;align-items:center;justify-content:center;font-size:14px;font-family:'Space Mono',monospace;font-weight:700;color:var(--accent);flex-shrink:0}
+.lobby-info{flex:1;min-width:0}
+.lobby-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lobby-meta{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px}
+.lobby-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px}
+.badge-waiting{background:#1a1a2e;color:var(--muted)}
+.badge-live{background:#0d2e1a;color:#4ade80}
+.join-btn{padding:7px 14px;background:var(--accent);border:none;border-radius:8px;color:#0a0a0f;font-size:12px;font-weight:800;cursor:pointer}
+.code-section{padding:0 16px;margin-top:20px}
+.code-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;color:var(--muted);font-size:12px}
+.code-divider::before,.code-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.code-input-row{display:flex;gap:8px}
+.code-input{flex:1;padding:12px;background:#0f0f1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;text-transform:uppercase;text-align:center;letter-spacing:4px}
+.code-input:focus{outline:none;border-color:var(--accent)}
+.btn-code{padding:12px 18px;background:var(--accent);border:none;border-radius:8px;color:#0a0a0f;font-size:13px;font-weight:800;cursor:pointer}
+.empty-state{text-align:center;padding:40px 16px;color:var(--muted);font-size:13px}
+#nameScreen{justify-content:center;padding:40px 24px}
+.name-back{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:32px;cursor:pointer}
+.name-lobby{font-size:13px;color:var(--accent);font-weight:700;margin-bottom:8px;font-family:'Space Mono',monospace}
+.join-title{font-size:36px;font-weight:800;line-height:1.05;margin-bottom:8px}
+.join-sub{font-size:14px;color:var(--muted);margin-bottom:32px}
+.join-input{width:100%;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;font-family:'Syne',sans-serif;margin-bottom:14px;text-align:center}
+.join-input:focus{outline:none;border-color:var(--accent)}
+.join-btn-big{width:100%;padding:18px;background:var(--accent);color:#0a0a0f;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer}
+
+/* play screen */
+#playScreen{width:100%;max-width:520px;align-self:center}
+.hdr{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:50}
+.hdr .nm{font-size:13px;font-weight:800;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr .gm{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;text-align:center}
+.hdr .sc{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2)}
+.tbar{height:4px;background:var(--border)}
+.tbar>div{height:4px;background:var(--accent);width:0}
+.tbar>div.danger{background:var(--danger)}
+.tleft{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);text-align:right;padding:6px 16px 0;height:22px}
+#stage{padding:8px 16px 24px;display:flex;flex-direction:column;gap:12px;flex:1}
+.eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.big{font-size:24px;font-weight:800;line-height:1.25;word-break:break-word}
+.med{font-size:18px;font-weight:700;line-height:1.3;word-break:break-word}
+.muted{color:var(--muted);font-size:13px;line-height:1.5}
+.center{text-align:center}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.card.me{border-color:var(--accent)}
+textarea.in,input.in{width:100%;padding:14px;background:#0f0f1a;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Syne',sans-serif;font-size:16px;resize:none}
+textarea.in:focus,input.in:focus{outline:none;border-color:var(--accent)}
+.btn{width:100%;padding:15px;border:none;border-radius:12px;background:var(--accent);color:#0a0a0f;font-size:15px;font-weight:800;cursor:pointer;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.choice{width:100%;padding:16px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-size:16px;font-weight:700;text-align:left;cursor:pointer;word-break:break-word;transition:all .15s}
+.choice:active{transform:scale(.98)}
+.choice.sel{border-color:var(--accent);background:#2a1020}
+.choice.win{border-color:var(--good);background:#0d2e1a}
+.choice.truth{border-color:var(--good);background:#0d2e1a}
+.choice:disabled{opacity:.5;pointer-events:none}
+.choice.sel:disabled{opacity:1}
+.choice small{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:4px}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;background:#2a1020;color:var(--accent);margin-left:6px}
+.tag.good{background:#0d2e1a;color:var(--good)}
+.gain{font-family:'Space Mono',monospace;font-weight:700;color:var(--accent2)}
+.letters{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.letters span{width:48px;height:56px;border-radius:12px;background:var(--card);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0f0f1a;border-radius:10px;font-size:14px}
+.row.me{border:1px solid var(--accent)}
+.row .rk{font-family:'Space Mono',monospace;color:var(--muted);width:22px;flex-shrink:0}
+.row .n{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-family:'Space Mono',monospace;color:var(--accent2);font-weight:700}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.pill{padding:5px 10px;border-radius:14px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:700}
+.pill.done{border-color:var(--good);color:var(--good)}
+.pill.away{opacity:.4}
+.wait-icon{font-size:44px;animation:float 2s ease-in-out infinite;text-align:center}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.dots span{display:inline-block;animation:blink 1.2s infinite;margin:0 1px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.pop{animation:pop .35s ease both}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* drawing */
+#padWrap{display:flex;flex-direction:column;gap:10px;align-items:center}
+#pad{width:min(92vw,360px);height:min(92vw,360px);background:#fff;border-radius:12px;touch-action:none;border:2px solid var(--border);cursor:crosshair}
+.tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.tool{padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:12px;font-weight:700;cursor:pointer}
+.tool.on{border-color:var(--accent);color:var(--accent)}
+.drawing-img{width:min(92vw,360px);height:min(92vw,360px);background:#fff;border-radius:12px;align-self:center;object-fit:contain}
+
+.notif{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--warn);color:#0a0a0f;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s;max-width:90vw;text-align:center}
+.notif.show{transform:translateX(-50%) translateY(0)}
+.notif.info{background:var(--accent2)}
+.notif.danger{background:var(--danger);color:#fff}
+.notif.broadcast{background:var(--violet);color:#fff}
+.status-bar{position:fixed;bottom:0;left:0;right:0;height:40px;padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;z-index:50}
+.status-online{color:#4ade80}.status-offline{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="lobbyScreen">
+  <div class="lobby-header">
+    <div class="lobby-title">Party Games</div>
+    <div class="lobby-sub">Pick an open lobby or enter a code to join.</div>
+  </div>
+  <div id="lobbyListContainer" class="lobby-list"><div class="empty-state">Loading lobbies...</div></div>
+  <div class="code-section">
+    <div class="code-divider">or join with code</div>
+    <div class="code-input-row">
+      <input class="code-input" id="codeInput" placeholder="A1B2C3" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn-code" onclick="joinByCode()">Join</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="nameScreen">
+  <div class="name-back" onclick="goBack()">-- Back to lobbies</div>
+  <div class="name-lobby" id="selectedLobbyLabel">Lobby</div>
+  <div class="join-title">Who are<br>you?</div>
+  <div class="join-sub">Pick a name everyone can see</div>
+  <input class="join-input" id="nameInput" type="text" placeholder="Your name..." maxlength="15" autocomplete="off">
+  <button class="join-btn-big" onclick="joinLobby()">Join the party</button>
+</div>
+
+<div class="screen" id="playScreen">
+  <div class="hdr">
+    <span class="nm" id="hName">Player</span>
+    <span class="gm" id="hGame">Party</span>
+    <span class="sc" id="hScore">0 pts</span>
+  </div>
+  <div class="tbar"><div id="tFill"></div></div>
+  <div class="tleft" id="tLeft"></div>
+  <div id="stage"></div>
+</div>
+
+<div class="notif" id="notif"></div>
+<div class="status-bar"><span class="status-online" id="statusDot">-</span>&nbsp;<span id="statusText">Connecting...</span></div>
+
+<script>
+const SERVER = "https://server.ctksystem.com"
+const API = SERVER + "/eduhub"
+const socket = io(SERVER + "/eduhub")
+
+let myId = localStorage.getItem("party_pid") || "y_" + Math.random().toString(36).slice(2, 11)
+localStorage.setItem("party_pid", myId)
+function getKeys() { try { return JSON.parse(localStorage.getItem("party_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("party_pkeys", JSON.stringify(k)) }
+const myKey = () => getKeys()[myLobbyId] || null
+
+let myName = "", myLobbyId = null, myLobbyName = ""
+let S = null            // public party state
+let Y = null            // my private state
+let gameName = "Party"
+let lobbyPlayers = []
+let drawings = {}       // drawingId -> dataURL
+let drafts = {}         // keeps typed text across re-renders
+let renderSig = ""
+let deadline = 0, timerH = null, duration = 1
+
+const $ = id => document.getElementById(id)
+function esc(s) { return s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") }
+function show(id) { document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); $(id).classList.add("active") }
+let notifT = null
+function notif(msg, type) { const el = $("notif"); el.textContent = msg; el.className = "notif " + (type || "") + " show"; clearTimeout(notifT); notifT = setTimeout(() => el.classList.remove("show"), 3200) }
+
+// ---------- lobby list ----------
+async function loadLobbies() {
+  try {
+    const list = await (await fetch(API + "/lobbies?type=party")).json()
+    const el = $("lobbyListContainer")
+    const open = list.filter(l => l.status !== "ended")
+    if (!open.length) { el.innerHTML = '<div class="empty-state">No open party lobbies right now.<br>Ask your host for a code to join a private one.</div>'; return }
+    el.innerHTML = open.map(l => `
+      <div class="lobby-card">
+        <div class="lobby-icon">P</div>
+        <div class="lobby-info"><div class="lobby-name">${esc(l.name)}</div>
+          <div class="lobby-meta">by ${esc(l.hostUsername)} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""}</div></div>
+        <div class="lobby-right"><span class="status-badge badge-${esc(l.status)}">${l.status === "live" ? "Live" : "Open"}</span>
+          <button class="join-btn" data-id="${esc(l.id)}" data-name="${esc(l.name)}">Join</button></div>
+      </div>`).join("")
+    el.querySelectorAll(".join-btn").forEach(b => b.onclick = () => selectLobby(b.dataset.id, b.dataset.name))
+  } catch { $("lobbyListContainer").innerHTML = '<div class="empty-state">Failed to load lobbies. Check your connection.</div>' }
+}
+
+async function joinByCode() {
+  const code = $("codeInput").value.trim().toUpperCase()
+  if (code.length !== 6) { notif("Enter a 6-character code", "danger"); return }
+  try {
+    const r = await fetch(API + "/lobbies/code/" + code)
+    if (!r.ok) { notif("Lobby not found", "danger"); return }
+    const l = await r.json()
+    if (l.type !== "party") { notif("That code is for " + (l.type === "bingo" ? "bingo" : "a quiz") + ", not a party game", "danger"); return }
+    selectLobby(l.id, l.name)
+  } catch { notif("Could not look up that code", "danger") }
+}
+
+function selectLobby(id, name) {
+  myLobbyId = id; myLobbyName = name
+  $("selectedLobbyLabel").textContent = name
+  show("nameScreen")
+  $("nameInput").value = localStorage.getItem("party_name") || ""
+  $("nameInput").focus()
+}
+function goBack() { myLobbyId = null; show("lobbyScreen") }
+
+function leaveLocal() { myLobbyId = null; myName = ""; S = null; Y = null; drawings = {}; drafts = {}; renderSig = ""; stopTimer() }
+
+function joinLobby() {
+  const name = $("nameInput").value.trim()
+  if (!name || !myLobbyId) { $("nameInput").focus(); return }
+  myName = name
+  localStorage.setItem("party_name", name)
+  $("hName").textContent = name
+  sendJoin()
+  show("playScreen")
+  S = null; Y = null; renderSig = ""
+  render()
+}
+function sendJoin() { socket.emit("lobby_join", { lobbyId: myLobbyId, name: myName, playerId: myId, playerKey: myKey() }) }
+
+// ---------- socket ----------
+socket.on("connect", () => {
+  $("statusDot").className = "status-online"; $("statusText").textContent = "Connected"
+  if (myName && myLobbyId) sendJoin()
+})
+socket.on("disconnect", () => { $("statusDot").className = "status-offline"; $("statusText").textContent = "Reconnecting..." })
+socket.on("connect_error", () => { $("statusDot").className = "status-offline"; $("statusText").textContent = "Can't reach the server" })
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && myName && myLobbyId && socket.connected) socket.emit("resync", { lobbyId: myLobbyId, playerId: myId })
+})
+socket.on("player_key", ({ playerKey, lobbyId }) => setKey(lobbyId || myLobbyId, playerKey))
+socket.on("party_meta", m => { gameName = m.name || "Party"; $("hGame").textContent = gameName })
+socket.on("players_update", list => { lobbyPlayers = list || []; if (!S) render() })
+socket.on("party_state", s => {
+  S = s
+  $("hGame").textContent = s.gameName || gameName
+  const me = s.players.find(p => p.id === myId)
+  if (me) $("hScore").textContent = me.score + " pts"
+  startTimer(s.endsAt ? s.endsAt - s.now : 0, s)
+  render()
+})
+socket.on("party_you", y => { Y = y; render() })
+socket.on("party_drawing", d => { drawings[d.id] = d.img; if (S && S.drawingId === d.id) renderSig = "", render() })
+socket.on("party_error", ({ message }) => notif(message, "danger"))
+socket.on("broadcast", ({ message }) => notif(message, "broadcast"))
+socket.on("error_msg", msg => {
+  notif(msg, "danger")
+  if (/not found|ended|full|Authentication/i.test(msg) && $("playScreen").classList.contains("active") && !S) { leaveLocal(); loadLobbies(); show("lobbyScreen") }
+})
+socket.on("game_ended", ({ reason } = {}) => { leaveLocal(); notif(reason || "The host ended the session", "broadcast"); loadLobbies(); show("lobbyScreen") })
+socket.on("kicked", () => { leaveLocal(); notif("You were removed from the lobby", "danger"); loadLobbies(); show("lobbyScreen") })
+
+// ---------- timer ----------
+function startTimer(remaining, s) {
+  stopTimer()
+  if (!remaining || remaining <= 0 || !s.endsAt) { $("tFill").style.width = "0"; $("tLeft").textContent = ""; return }
+  deadline = Date.now() + remaining
+  duration = Math.max(remaining, 1)
+  const tick = () => {
+    const left = deadline - Date.now()
+    const pct = Math.max(0, Math.min(100, left / duration * 100))
+    $("tFill").style.width = pct + "%"
+    $("tFill").className = pct < 25 ? "danger" : ""
+    $("tLeft").textContent = left > 0 ? Math.ceil(left / 1000) + "s" : ""
+    if (left <= 0) stopTimer()
+  }
+  tick(); timerH = setInterval(tick, 150)
+}
+function stopTimer() { if (timerH) clearInterval(timerH); timerH = null }
+
+// ---------- sending ----------
+function send(payload) { socket.emit("party_submit", { lobbyId: myLobbyId, playerId: myId, ...payload }) }
+function draftOf(k) { return drafts[k] || "" }
+function bindDrafts() {
+  document.querySelectorAll("[data-draft]").forEach(el => {
+    el.value = draftOf(el.dataset.draft)
+    el.addEventListener("input", () => { drafts[el.dataset.draft] = el.value })
+  })
+}
+
+// ---------- rendering ----------
+function rankRows(list, limit) {
+  return (list || []).slice(0, limit || 12).map((p, i) => `
+    <div class="row ${p.id === myId ? "me" : ""}"><span class="rk">${i + 1}</span><span class="n">${esc(p.name)}</span><span class="s">${p.score}</span></div>`).join("")
+}
+function gainFor(S) { const g = S.gains && S.gains[myId]; return g ? `<span class="gain">+${g}</span>` : "" }
+function doneLine() {
+  if (!S) return ""
+  const act = S.players.filter(p => p.playing && !p.away)
+  const done = act.filter(p => p.done).length
+  return `<div class="muted center" id="progress">${done} of ${act.length} done</div>`
+}
+function pills() {
+  return `<div class="pill-row">${S.players.filter(p => p.playing).map(p => `<span class="pill ${p.done ? "done" : ""} ${p.away ? "away" : ""}">${esc(p.name)}${p.done ? " ✓" : ""}</span>`).join("")}</div>`
+}
+function optionList(opts, o) {
+  o = o || {}
+  return opts.map(x => {
+    const hidden = (Y.hide || []).includes(x.id)
+    const sel = Y.picked === x.id
+    return `<button class="choice ${sel ? "sel" : ""}" data-id="${esc(x.id)}" ${Y.picked || hidden ? "disabled" : ""} style="${hidden ? "display:none" : ""}">${esc(x.text)}</button>`
+  }).join("")
+}
+function revealOptions(opts) {
+  return opts.map(o => `
+    <div class="choice ${o.truth ? "truth" : ""}" style="pointer-events:none">
+      ${esc(o.text)} ${o.truth ? '<span class="tag good">TRUE</span>' : ""}
+      ${o.authors && o.authors.length ? `<small>Written by ${esc(o.authors.join(", "))}</small>` : (o.house ? "<small>Made up by the house</small>" : "")}
+      ${o.pickers && o.pickers.length ? `<small>Picked by ${esc(o.pickers.join(", "))}</small>` : ""}
+    </div>`).join("")
+}
+
+function render() {
+  const stage = $("stage")
+  if (!$("playScreen").classList.contains("active")) return
+  // in lobby, before the host starts
+  if (!S) {
+    const sig = "lobby|" + lobbyPlayers.length
+    if (sig === renderSig) return
+    renderSig = sig
+    stage.innerHTML = `<div class="wait-icon" style="margin-top:40px">&#127881;</div>
+      <div class="big center">You're in, ${esc(myName)}!</div>
+      <div class="muted center">Waiting for the host to start<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+      <div class="pill-row">${lobbyPlayers.filter(p => !p.disconnected).map(p => `<span class="pill">${esc(p.name)}</span>`).join("")}</div>`
+    return
+  }
+  if (!Y || Y.seq !== S.seq) return // wait until both halves of the same phase have arrived
+  const sig = S.seq + "|" + JSON.stringify(Y)
+  if (sig === renderSig) { const pr = $("progress"); if (pr) pr.outerHTML = doneLine(); document.querySelectorAll(".pill-row").forEach(() => {}); return }
+  renderSig = sig
+  $("hScore").textContent = (Y.score || 0) + " pts"
+  const ph = S.phase
+  let html = ""
+  if (ph === "intro") html = `<div class="wait-icon pop" style="margin-top:20px">&#127918;</div><div class="eyebrow center">${esc(S.gameName)}</div><div class="big center">Get ready!</div><div class="card muted center">${esc(S.rules || "")}</div>${Y.playing ? "" : '<div class="muted center">The game is already running - you\'ll join at the next round.</div>'}`
+  else if (ph === "final") html = finalView()
+  else if (ph === "scores") html = `<div class="eyebrow">Round ${S.round} of ${S.rounds}</div><div class="big">Scores</div>${rankRows(S.standings)}<div class="muted center">Next round starting soon...</div>`
+  else if (!Y.playing) html = `<div class="wait-icon" style="margin-top:20px">&#128065;</div><div class="big center">You're watching this round</div><div class="muted center">You'll be dealt in when the next round starts. Look at the big screen!</div>`
+  else html = ({ quip: quipView, bluff: bluffView, draw: drawView, acro: acroView, likely: likelyView }[S.game] || (() => ""))()
+  stage.innerHTML = html
+  bindDrafts()
+  wireUp()
+}
+
+function finalView() {
+  const rank = Y.rank
+  const medal = rank === 1 ? "&#127942;" : rank === 2 ? "&#129352;" : rank === 3 ? "&#129353;" : "&#127881;"
+  return `<div class="wait-icon pop" style="margin-top:12px">${medal}</div>
+    <div class="big center">${rank === 1 ? "You won!" : "You placed #" + rank}</div>
+    <div class="center gain" style="font-size:30px">${Y.score} pts</div>
+    ${rankRows(S.standings)}
+    <button class="btn ghost" onclick="leaveAndList()">Back to lobbies</button>`
+}
+function leaveAndList() { leaveLocal(); loadLobbies(); show("lobbyScreen") }
+
+// ---- Quip Battle
+function quipView() {
+  const ph = S.phase
+  if (ph === "write") {
+    const tasks = Y.tasks || []
+    const left = tasks.filter(t => !t.answered).length
+    return `<div class="eyebrow">Round ${S.round} of ${S.rounds}</div><div class="big">Answer ${tasks.length === 1 ? "this" : "these"}!</div>` +
+      tasks.map(t => `<div class="card ${t.answered ? "" : "me"}"><div class="med" style="margin-bottom:10px">${esc(t.prompt)}</div>
+        ${t.answered ? `<div class="muted">Your answer:</div><div class="med" style="color:var(--good)">${esc(t.answer)}</div>`
+          : `<textarea class="in" rows="2" maxlength="80" placeholder="Your funniest answer..." data-draft="q${t.id}"></textarea>
+             <button class="btn" style="margin-top:8px" data-quip="${t.id}">Submit</button>`}</div>`).join("") +
+      (left === 0 ? '<div class="muted center">All answers in! Waiting for the others...</div>' : "") + doneLine()
+  }
+  if (ph === "vote") {
+    if (!Y.canVote) return `<div class="eyebrow">Matchup ${S.index} of ${S.total}</div><div class="big">${esc(S.prompt)}</div><div class="card me center"><div class="med">That's YOUR matchup!</div><div class="muted">Sit back while everyone votes.</div></div>`
+    return `<div class="eyebrow">Matchup ${S.index} of ${S.total}</div><div class="big">${esc(S.prompt)}</div><div class="muted">Which answer is funnier?</div>` +
+      S.options.map(o => `<button class="choice ${Y.voted === o.key ? "sel" : ""}" data-key="${o.key}" ${Y.voted ? "disabled" : ""}>${esc(o.text)}</button>`).join("") +
+      (Y.voted ? '<div class="muted center">Vote locked in!</div>' : "")
+  }
+  if (ph === "reveal") {
+    return `<div class="eyebrow">Matchup ${S.index} of ${S.total}</div><div class="big">${esc(S.prompt)}</div>` +
+      (S.quiplash ? '<div class="tag good center" style="font-size:14px;padding:6px">&#9889; QUIPLASH! Everyone agreed</div>' : "") +
+      S.options.map(o => `<div class="choice ${o.winner ? "win" : ""}" style="pointer-events:none">${esc(o.text)} ${o.winner ? '<span class="tag good">WINNER</span>' : ""}<small>${esc(o.author)} - ${o.votes} vote${o.votes !== 1 ? "s" : ""}</small></div>`).join("") +
+      `<div class="center">${gainFor(S)}</div>`
+  }
+  return ""
+}
+
+// ---- Bluff
+function bluffView() {
+  const ph = S.phase
+  if (ph === "lie") return `<div class="eyebrow">Question ${S.round} of ${S.rounds}</div><div class="big">${esc(S.prompt)}</div>` +
+    (Y.submitted ? `<div class="card center"><div class="muted">Your lie:</div><div class="med" style="color:var(--good)">${esc(Y.text)}</div></div><div class="muted center">Locked in! Waiting for the others...</div>${doneLine()}`
+      : `<div class="muted">Write a believable FAKE answer to fool your friends.</div><input class="in" maxlength="40" placeholder="Your lie..." data-draft="lie"><button class="btn" data-lie="1">Submit lie</button>`)
+  if (ph === "pick") return `<div class="eyebrow">Question ${S.round} of ${S.rounds}</div><div class="big">${esc(S.prompt)}</div><div class="muted">${Y.picked ? "Locked in! Waiting for the others..." : "Which one is the TRUE answer?"}</div>${optionList(S.options)}`
+  if (ph === "reveal") return `<div class="eyebrow">The truth</div><div class="big">${esc(S.prompt)}</div><div class="med" style="color:var(--good)">${esc(S.truth)}</div>${revealOptions(S.options)}<div class="center">${gainFor(S)}</div>`
+  return ""
+}
+
+// ---- Acro Lash
+function acroView() {
+  const ph = S.phase
+  const L = `<div class="letters">${(S.letters || []).map(x => `<span>${esc(x)}</span>`).join("")}</div>`
+  if (ph === "write") return `<div class="eyebrow">Round ${S.round} of ${S.rounds}</div>${L}<div class="muted center">Write a phrase: one word per letter, in order.</div>` +
+    (Y.submitted ? `<div class="card center"><div class="med" style="color:var(--good)">${esc(Y.text)}</div></div><div class="muted center">Locked in! Waiting for the others...</div>${doneLine()}`
+      : `<input class="in" maxlength="100" placeholder="${(S.letters || []).map(x => x + "...").join(" ")}" data-draft="acro"><button class="btn" data-acro="1">Submit</button>`)
+  if (ph === "vote") return `<div class="eyebrow">Vote for the best</div>${L}<div class="muted center">${Y.picked ? "Vote locked in!" : "Tap your favorite phrase (not your own)."}</div>${optionList(S.options)}`
+  if (ph === "reveal") return `<div class="eyebrow">Results</div>${L}` +
+    (S.options.length ? S.options.map(o => `<div class="choice ${o.winner ? "win" : ""}" style="pointer-events:none">${esc(o.text)} ${o.winner ? '<span class="tag good">WINNER</span>' : ""}<small>${esc(o.author)} - ${o.votes} vote${o.votes !== 1 ? "s" : ""}</small></div>`).join("") : '<div class="muted center">Not enough entries this round.</div>') +
+    `<div class="center">${gainFor(S)}</div>`
+  return ""
+}
+
+// ---- Most Likely To
+function likelyView() {
+  const ph = S.phase
+  if (ph === "vote") return `<div class="eyebrow">Question ${S.round} of ${S.rounds}</div><div class="big">Who is most likely to ${esc(S.prompt)}?</div>` +
+    `<div class="muted">${Y.picked ? "Vote locked in! Waiting for the others..." : "Vote for a player. Match the majority to score!"}</div>` +
+    S.candidates.filter(c => c.id !== myId).map(c => `<button class="choice ${Y.picked === c.id ? "sel" : ""}" data-target="${esc(c.id)}" ${Y.picked ? "disabled" : ""}>${esc(c.name)}</button>`).join("")
+  if (ph === "reveal") return `<div class="eyebrow">Question ${S.round} of ${S.rounds}</div><div class="big">Most likely to ${esc(S.prompt)}</div>` +
+    S.results.map(r => `<div class="choice ${r.winner ? "win" : ""}" style="pointer-events:none">${esc(r.name)} ${r.winner ? '<span class="tag good">&#128081;</span>' : ""}<small>${r.votes} vote${r.votes !== 1 ? "s" : ""}</small></div>`).join("") +
+    `<div class="center">${gainFor(S)}</div>`
+  return ""
+}
+
+// ---- Draw & Guess
+const PALETTE = ["#111111", "#e11d48", "#f97316", "#facc15", "#22c55e", "#0ea5e9", "#7c3aed", "#92400e"]
+const pad = { strokes: [], cur: null, color: PALETTE[0], size: 5, erase: false, seq: -1 }
+
+function drawView() {
+  const ph = S.phase
+  if (ph === "draw") {
+    if (Y.submitted) return `<div class="wait-icon" style="margin-top:20px">&#127912;</div><div class="big center">Drawing sent!</div><div class="muted center">Waiting for the others to finish...</div>${doneLine()}`
+    if (pad.seq !== S.seq) { pad.strokes = []; pad.cur = null; pad.seq = S.seq }
+    return `<div class="eyebrow">Round ${S.round} of ${S.rounds}</div><div class="muted">Draw this (no words!):</div><div class="big" style="color:var(--accent)">${esc(Y.prompt)}</div>
+      <div id="padWrap"><canvas id="pad" width="360" height="360"></canvas>
+        <div class="tools">${PALETTE.map(c => `<span class="sw ${!pad.erase && pad.color === c ? "on" : ""}" style="background:${c}" data-color="${c}"></span>`).join("")}</div>
+        <div class="tools"><button class="tool ${pad.size === 3 ? "on" : ""}" data-size="3">Thin</button><button class="tool ${pad.size === 6 ? "on" : ""}" data-size="6">Med</button><button class="tool ${pad.size === 14 ? "on" : ""}" data-size="14">Thick</button>
+          <button class="tool ${pad.erase ? "on" : ""}" data-erase="1">Eraser</button><button class="tool" data-undo="1">Undo</button><button class="tool" data-clear="1">Clear</button></div></div>
+      <button class="btn" data-senddraw="1">Send drawing</button>`
+  }
+  const img = drawings[S.drawingId]
+  const pic = img ? `<img class="drawing-img" src="${esc(img)}" alt="drawing">` : '<div class="muted center">Loading drawing...</div>'
+  const head = `<div class="eyebrow">Drawing ${S.index} of ${S.total} - by ${esc(S.artist)}</div>`
+  if (ph === "title") {
+    if (Y.isArtist) return `${head}${pic}<div class="card center me"><div class="med">That's YOUR drawing!</div><div class="muted">Everyone is making up fake titles.</div></div>${doneLine()}`
+    return `${head}${pic}` + (Y.submitted ? `<div class="card center"><div class="muted">Your title:</div><div class="med" style="color:var(--good)">${esc(Y.text)}</div></div><div class="muted center">Locked in! Waiting for the others...</div>${doneLine()}`
+      : `<div class="muted">Write a fake title that could fool people.</div><input class="in" maxlength="40" placeholder="A fake title..." data-draft="title"><button class="btn" data-title="1">Submit title</button>`)
+  }
+  if (ph === "pick") {
+    if (Y.isArtist) return `${head}${pic}<div class="card center me"><div class="med">That's YOUR drawing!</div><div class="muted">Everyone is guessing the real title.</div></div>`
+    return `${head}${pic}<div class="muted">${Y.picked ? "Locked in! Waiting for the others..." : "Which title is the real one?"}</div>${optionList(S.options)}`
+  }
+  if (ph === "reveal") return `${head}${pic}<div class="med" style="color:var(--good)">${esc(S.truth)}</div>${revealOptions(S.options)}<div class="center">${gainFor(S)}</div>`
+  return ""
+}
+
+function padCtx() { return $("pad") && $("pad").getContext("2d") }
+function padRedraw() {
+  const c = $("pad"); if (!c) return
+  const ctx = c.getContext("2d")
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height)
+  ctx.lineCap = "round"; ctx.lineJoin = "round"
+  const all = pad.cur ? [...pad.strokes, pad.cur] : pad.strokes
+  for (const s of all) {
+    ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = s.size
+    if (s.pts.length === 1) { ctx.beginPath(); ctx.arc(s.pts[0][0], s.pts[0][1], s.size / 2, 0, Math.PI * 2); ctx.fill(); continue }
+    ctx.beginPath(); ctx.moveTo(s.pts[0][0], s.pts[0][1])
+    for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i][0], s.pts[i][1])
+    ctx.stroke()
+  }
+}
+function wirePad() {
+  const c = $("pad"); if (!c) return
+  const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height] }
+  c.addEventListener("pointerdown", e => { e.preventDefault(); c.setPointerCapture(e.pointerId); pad.cur = { color: pad.erase ? "#ffffff" : pad.color, size: pad.size, pts: [pos(e)] }; padRedraw() })
+  c.addEventListener("pointermove", e => { if (!pad.cur) return; e.preventDefault(); pad.cur.pts.push(pos(e)); padRedraw() })
+  const end = () => { if (pad.cur) { pad.strokes.push(pad.cur); pad.cur = null; padRedraw() } }
+  c.addEventListener("pointerup", end); c.addEventListener("pointercancel", end); c.addEventListener("pointerleave", end)
+  padRedraw()
+}
+
+// ---- click wiring (delegated per render)
+function wireUp() {
+  const st = $("stage")
+  st.querySelectorAll("[data-quip]").forEach(b => b.onclick = () => {
+    const id = b.dataset.quip, text = (drafts["q" + id] || "").trim()
+    if (!text) { notif("Write something first!", "danger"); return }
+    send({ id, text })
+  })
+  st.querySelectorAll("[data-key]").forEach(b => b.onclick = () => send({ choice: b.dataset.key }))
+  st.querySelectorAll("[data-lie]").forEach(b => b.onclick = () => { const t = (drafts.lie || "").trim(); if (!t) { notif("Write a lie first!", "danger"); return } send({ text: t }) })
+  st.querySelectorAll("[data-acro]").forEach(b => b.onclick = () => { const t = (drafts.acro || "").trim(); if (!t) { notif("Write your phrase first!", "danger"); return } send({ text: t }) })
+  st.querySelectorAll("[data-title]").forEach(b => b.onclick = () => { const t = (drafts.title || "").trim(); if (!t) { notif("Write a title first!", "danger"); return } send({ text: t }) })
+  st.querySelectorAll(".choice[data-id]").forEach(b => b.onclick = () => send({ id: b.dataset.id }))
+  st.querySelectorAll("[data-target]").forEach(b => b.onclick = () => send({ target: b.dataset.target }))
+  st.querySelectorAll("input.in").forEach(i => i.addEventListener("keydown", e => { if (e.key === "Enter") st.querySelector(".btn[data-lie],.btn[data-acro],.btn[data-title]")?.click() }))
+  // drawing
+  if ($("pad")) {
+    wirePad()
+    st.querySelectorAll("[data-color]").forEach(s => s.onclick = () => { pad.color = s.dataset.color; pad.erase = false; refreshTools() })
+    st.querySelectorAll("[data-size]").forEach(s => s.onclick = () => { pad.size = +s.dataset.size; refreshTools() })
+    st.querySelectorAll("[data-erase]").forEach(s => s.onclick = () => { pad.erase = !pad.erase; refreshTools() })
+    st.querySelectorAll("[data-undo]").forEach(s => s.onclick = () => { pad.strokes.pop(); padRedraw() })
+    st.querySelectorAll("[data-clear]").forEach(s => s.onclick = () => { pad.strokes = []; padRedraw() })
+    st.querySelectorAll("[data-senddraw]").forEach(s => s.onclick = () => {
+      if (!pad.strokes.length) { notif("Draw something first!", "danger"); return }
+      send({ img: $("pad").toDataURL("image/jpeg", 0.7) })
+    })
+  }
+}
+function refreshTools() {
+  document.querySelectorAll("[data-color]").forEach(s => s.classList.toggle("on", !pad.erase && s.dataset.color === pad.color))
+  document.querySelectorAll("[data-size]").forEach(s => s.classList.toggle("on", +s.dataset.size === pad.size))
+  document.querySelectorAll("[data-erase]").forEach(s => s.classList.toggle("on", pad.erase))
+}
+
+// ---------- start ----------
+loadLobbies()
+const params = new URLSearchParams(location.search)
+if (params.get("lid")) {
+  fetch(API + "/lobbies/" + encodeURIComponent(params.get("lid"))).then(r => r.json()).then(l => { if (l.type === "party") selectLobby(l.id, l.name) }).catch(() => {})
+} else if (params.get("code")) {
+  $("codeInput").value = params.get("code").toUpperCase()
+  joinByCode()
+}
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") joinLobby() })
+</script>
+</body>
+</html>

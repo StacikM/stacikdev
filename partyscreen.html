@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party Screen</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--surface:#13131a;--card:#1c1c28;--border:#2a2a3d;--accent:#ff6b9d;--accent2:#c8f545;--violet:#7c6af7;--danger:#ff4757;--good:#4ade80;--text:#e8e8f0;--muted:#8a8aa8}
+html,body{height:100%}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;
+  background-image:radial-gradient(circle at 15% 0%,#ff6b9d1c,transparent 45%),radial-gradient(circle at 90% 100%,#7c6af71c,transparent 45%)}
+#app{height:100vh;display:flex;flex-direction:column;padding:clamp(12px,2.2vw,32px);gap:clamp(10px,1.6vw,22px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-family:'Space Mono',monospace;font-weight:700;color:var(--accent);font-size:clamp(13px,1.5vw,22px)}
+.brand small{display:block;color:var(--muted);font-weight:400;font-size:.7em;margin-top:2px}
+.joininfo{text-align:center;font-size:clamp(12px,1.4vw,20px);color:var(--muted)}
+.joininfo b{display:block;font-family:'Space Mono',monospace;font-size:clamp(22px,3.2vw,46px);letter-spacing:.18em;color:var(--accent2)}
+.timer{width:clamp(56px,6vw,92px);height:clamp(56px,6vw,92px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;font-size:clamp(20px,2.6vw,38px);border:4px solid var(--border);position:relative}
+.timer.low{border-color:var(--danger);color:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(10px,1.8vw,26px);text-align:center;overflow:hidden}
+.stage>:first-child{margin-top:auto}.stage>:last-child{margin-bottom:auto}
+.eyebrow{font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-size:clamp(12px,1.4vw,20px)}
+.title{font-size:clamp(28px,5.2vw,78px);font-weight:800;line-height:1.1;max-width:92vw;word-break:break-word}
+.sub{font-size:clamp(15px,2vw,30px);color:var(--muted);max-width:80vw;line-height:1.4}
+.cards{display:flex;gap:clamp(12px,2vw,28px);width:100%;justify-content:center;flex-wrap:wrap}
+.cardx{flex:1 1 260px;max-width:46%;background:var(--card);border:3px solid var(--border);border-radius:24px;padding:clamp(16px,2.4vw,40px);font-size:clamp(20px,3vw,46px);font-weight:700;line-height:1.25;word-break:break-word;position:relative}
+.cardx.win{border-color:var(--good);background:#0d2e1a}
+.cardx.truth{border-color:var(--good);background:#0d2e1a}
+.cardx small{display:block;margin-top:12px;font-size:.42em;font-weight:400;color:var(--muted)}
+.cardx .votes{font-family:'Space Mono',monospace;color:var(--accent2);font-size:.6em;margin-top:10px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(10px,1.4vw,20px);width:100%;max-width:1500px}
+.opts .cardx{max-width:none;text-align:left;font-size:clamp(18px,2.4vw,36px);display:flex;flex-direction:column;justify-content:center}
+.pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.pill{padding:8px 18px;border-radius:30px;background:var(--card);border:2px solid var(--border);font-size:clamp(14px,1.7vw,26px);font-weight:700;transition:all .2s}
+.pill.done{border-color:var(--good);color:var(--good)}
+.pill.away{opacity:.35}
+.tag{display:inline-block;font-size:.45em;font-weight:800;padding:3px 12px;border-radius:20px;background:#0d2e1a;color:var(--good);vertical-align:middle;margin-left:10px}
+.letters{display:flex;gap:clamp(8px,1.4vw,20px);justify-content:center}
+.letters span{width:clamp(56px,8vw,130px);height:clamp(70px,10vw,160px);border-radius:20px;background:var(--card);border:4px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:clamp(36px,6vw,100px);font-weight:800;color:var(--accent)}
+.drawing.sm{height:min(32vh,40vw)}
+.opts.compact .cardx{padding:clamp(10px,1.4vw,22px) clamp(14px,1.8vw,26px);font-size:clamp(15px,1.9vw,28px);border-radius:18px}
+.opts.compact .cardx small{margin-top:6px}
+.drawing{height:min(46vh,52vw);aspect-ratio:1;flex-shrink:1;min-height:120px;background:#fff;border-radius:18px;object-fit:contain;border:6px solid var(--card)}
+.board{width:min(900px,92vw);display:flex;flex-direction:column;gap:10px}
+.brow{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--card);border-radius:14px;font-size:clamp(16px,2.2vw,32px);font-weight:700;position:relative;overflow:hidden}
+.brow .bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#ff6b9d33,#ff6b9d08);z-index:0;transition:width .8s ease}
+.brow>*{position:relative;z-index:1}
+.brow .rk{font-family:'Space Mono',monospace;color:var(--muted);width:2ch}
+.brow .n{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .s{font-family:'Space Mono',monospace;color:var(--accent2)}
+.brow .g{font-family:'Space Mono',monospace;color:var(--good);font-size:.7em}
+.podium{display:flex;align-items:flex-end;gap:clamp(8px,1.6vw,24px);justify-content:center;height:min(40vh,360px)}
+.pod{width:clamp(110px,16vw,240px);border-radius:18px 18px 0 0;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 8px;gap:6px;animation:rise .8s ease both}
+.pod .nm{font-weight:800;font-size:clamp(14px,2vw,30px);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .sc{font-family:'Space Mono',monospace;color:var(--accent2);font-size:clamp(14px,1.8vw,26px)}
+.pod .md{font-size:clamp(28px,4vw,60px)}
+.pod.p1{height:100%;background:linear-gradient(#ffd70033,var(--card))}.pod.p2{height:78%}.pod.p3{height:62%}
+@keyframes rise{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+.strip{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;min-height:42px}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:30px;background:var(--surface);border:1px solid var(--border);font-size:clamp(12px,1.3vw,20px);font-weight:700}
+.chip b{font-family:'Space Mono',monospace;color:var(--accent2)}
+.chip.done{border-color:var(--good)}
+.chip.away{opacity:.35}
+.bigq{padding:30px;border-radius:24px;background:var(--card)}
+#qr{background:#fff;padding:10px;border-radius:14px;line-height:0;display:inline-block}
+.setup{display:flex;flex-direction:column;gap:14px;align-items:center}
+.setup input{padding:16px;font-size:30px;text-align:center;letter-spacing:.2em;text-transform:uppercase;background:var(--surface);border:2px solid var(--border);border-radius:16px;color:var(--text);font-family:'Space Mono',monospace;width:min(80vw,380px)}
+.setup button{padding:16px 40px;border:none;border-radius:16px;background:var(--accent);font-size:22px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif}
+.pop{animation:pop .4s ease both}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.err{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--danger);padding:10px 22px;border-radius:30px;font-weight:700;display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="brand" id="brand">EduHub Party<small id="brandSub">Big screen</small></div>
+    <div class="joininfo" id="joininfo"></div>
+    <div class="timer" id="timer"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="strip" id="strip"></div>
+</div>
+<div class="err" id="err"></div>
+
+<script>
+const SERVER = "https://server.ctksystem.com"
+const socket = io(SERVER + "/eduhub")
+const $ = id => document.getElementById(id)
+function esc(s) { return s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") }
+
+let code = (new URLSearchParams(location.search).get("code") || "").toUpperCase()
+let lobby = null, S = null, players = [], drawings = {}
+let deadline = 0, timerH = null, lastSig = ""
+
+function joinUrl() { return location.origin + location.pathname.replace(/[^/]*$/, "") + "party.html?code=" + (lobby ? lobby.code : code) }
+
+function connectScreen() {
+  socket.emit("screen_join", { code })
+}
+socket.on("connect", () => { if (code) connectScreen() })
+socket.on("screen_joined", ({ lobby: l }) => {
+  lobby = l
+  $("brandSub").textContent = l.name
+  $("joininfo").innerHTML = 'Join with code<b>' + esc(l.code) + '</b>'
+  render()
+})
+socket.on("players_update", list => { players = list || []; if (!S) render(); drawStrip() })
+socket.on("party_state", s => {
+  S = s
+  players = s.players.map(p => ({ playerId: p.id, name: p.name, score: p.score, disconnected: p.away }))
+  startTimer(s.endsAt ? s.endsAt - s.now : 0)
+  render()
+})
+socket.on("party_drawing", d => { drawings[d.id] = d.img; lastSig = ""; render() })
+socket.on("error_msg", m => { const e = $("err"); e.textContent = m; e.style.display = "block"; setTimeout(() => e.style.display = "none", 4000); if (!lobby) askCode() })
+socket.on("game_ended", () => { S = null; lobby = null; players = []; $("joininfo").innerHTML = ""; askCode("That session has ended. Enter a new code:") })
+
+function startTimer(remaining) {
+  if (timerH) clearInterval(timerH)
+  const t = $("timer")
+  if (!remaining || remaining <= 0) { t.textContent = ""; t.style.visibility = "hidden"; t.classList.remove("low"); return }
+  t.style.visibility = "visible"
+  deadline = Date.now() + remaining
+  const tick = () => {
+    const left = Math.max(0, deadline - Date.now())
+    t.textContent = Math.ceil(left / 1000)
+    t.classList.toggle("low", left < 6000)
+    if (left <= 0) { clearInterval(timerH); timerH = null }
+  }
+  tick(); timerH = setInterval(tick, 200)
+}
+
+function drawStrip() {
+  const list = S ? S.players : players.map(p => ({ id: p.playerId, name: p.name, score: p.score || 0, away: p.disconnected, done: false }))
+  $("strip").innerHTML = list.map(p => `<span class="chip ${p.done ? "done" : ""} ${p.away ? "away" : ""}">${esc(p.name)} <b>${p.score}</b>${p.done ? " ✓" : ""}</span>`).join("")
+}
+
+function askCode(msg) {
+  $("stage").innerHTML = `<div class="setup"><div class="title">${esc(msg || "Enter the lobby code")}</div>
+    <input id="codeIn" maxlength="6" placeholder="A1B2C3" autofocus><button id="goBtn">Show big screen</button></div>`
+  const go = () => { code = $("codeIn").value.trim().toUpperCase(); if (code.length === 6) { history.replaceState(null, "", "?code=" + code); connectScreen() } }
+  $("goBtn").onclick = go
+  $("codeIn").addEventListener("keydown", e => { if (e.key === "Enter") go() })
+}
+
+function board(list, gains, max) {
+  const top = Math.max(1, ...list.map(p => p.score))
+  return `<div class="board">` + list.slice(0, max || 8).map((p, i) => `
+    <div class="brow pop" style="animation-delay:${i * .05}s"><div class="bar" style="width:${Math.max(3, p.score / top * 100)}%"></div>
+      <span class="rk">${i + 1}</span><span class="n">${esc(p.name)}</span>${gains && gains[p.id] ? `<span class="g">+${gains[p.id]}</span>` : ""}<span class="s">${p.score}</span></div>`).join("") + `</div>`
+}
+
+function podium(list) {
+  const t = list.slice(0, 3)
+  const order = [t[1], t[0], t[2]].filter(Boolean)
+  const cls = x => "p" + (t.indexOf(x) + 1), medal = x => ["&#129351;", "&#129352;", "&#129353;"][t.indexOf(x)]
+  return `<div class="podium">` + order.map(p => `<div class="pod ${cls(p)}" style="animation-delay:${t.indexOf(p) === 0 ? .6 : t.indexOf(p) === 1 ? .2 : 0}s"><span class="md">${medal(p)}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join("") + `</div>`
+}
+
+function reveals(opts) {
+  return `<div class="opts ${opts.length >= 4 ? "compact" : ""}">` + opts.map(o => `
+    <div class="cardx ${o.truth ? "truth" : ""} ${o.winner ? "win" : ""} pop">${esc(o.text)}${o.truth ? '<span class="tag">TRUE</span>' : ""}${o.winner ? '<span class="tag">WINNER</span>' : ""}
+      ${o.authors && o.authors.length ? `<small>Written by ${esc(o.authors.join(", "))}</small>` : (o.author ? `<small>${esc(o.author)}</small>` : (o.house ? "<small>Made up by the house</small>" : ""))}
+      ${o.pickers && o.pickers.length ? `<small>Picked by ${esc(o.pickers.join(", "))}</small>` : ""}
+      ${o.votes != null ? `<div class="votes">${o.votes} vote${o.votes !== 1 ? "s" : ""}</div>` : ""}</div>`).join("") + `</div>`
+}
+function pickList(opts) {
+  return `<div class="opts ${opts.length >= 4 ? "compact" : ""}">` + opts.map((o, i) => `<div class="cardx pop" style="animation-delay:${i * .08}s"><small style="margin:0 0 6px">${i + 1}</small>${esc(o.text)}</div>`).join("") + `</div>`
+}
+function pills() {
+  return `<div class="pills">` + S.players.filter(p => p.playing).map(p => `<span class="pill ${p.done ? "done" : ""} ${p.away ? "away" : ""}">${esc(p.name)}${p.done ? " ✓" : ""}</span>`).join("") + `</div>`
+}
+function img(small) {
+  const d = drawings[S.drawingId]
+  return d ? `<img class="drawing ${small ? "sm" : ""} pop" src="${esc(d)}" alt="drawing">` : ""
+}
+const round = () => `<div class="eyebrow">${esc(S.gameName)} - ${S.game === "bluff" || S.game === "likely" ? "Question" : "Round"} ${S.round} of ${S.rounds}</div>`
+
+function render() {
+  drawStrip()
+  const st = $("stage")
+  if (!lobby) { if (!code) askCode(); return }
+  if (!S) {
+    const sig = "lobby|" + players.map(p => p.name).join(",") + "|" + code
+    if (sig === lastSig) return
+    lastSig = sig
+    st.innerHTML = `<div class="eyebrow">Waiting for the host to start</div><div class="title">Join at<br><span style="color:var(--accent)">${esc(location.host)}</span> with code <span style="color:var(--accent2)">${esc(lobby.code)}</span></div>
+      <div id="qr"></div><div class="sub">${players.filter(p => !p.disconnected).length} player${players.length !== 1 ? "s" : ""} in the lobby</div>`
+    try { new QRCode($("qr"), { text: joinUrl(), width: 200, height: 200, colorDark: "#0a0a0f", colorLight: "#ffffff" }) } catch {}
+    return
+  }
+  const sig = S.seq + "|" + S.phase + "|" + (drawings[S.drawingId] ? 1 : 0) + "|" + S.players.map(p => p.done ? 1 : 0).join("")
+  if (sig === lastSig) return
+  lastSig = sig
+  const g = S.game, ph = S.phase
+  let h = ""
+  if (ph === "intro") h = `<div class="eyebrow">Get ready</div><div class="title pop">${esc(S.gameName)}</div><div class="sub">${esc(S.rules || "")}</div>`
+  else if (ph === "final") h = `<div class="eyebrow">${esc(S.gameName)}</div><div class="title">Final scores</div>${podium(S.standings)}${S.standings.length > 3 ? board(S.standings.slice(3), null, 6) : ""}`
+  else if (ph === "scores") h = `${round()}<div class="title">Scoreboard</div>${board(S.standings, S.gains)}`
+  else if (g === "quip") {
+    if (ph === "write") h = `${round()}<div class="title">Write your answers!</div><div class="sub">Everyone has prompts on their phone</div>${pills()}`
+    if (ph === "vote") h = `<div class="eyebrow">Matchup ${S.index} of ${S.total} - vote on your phone!</div><div class="title">${esc(S.prompt)}</div>
+      <div class="cards">${S.options.map((o, i) => `<div class="cardx pop" style="animation-delay:${i * .15}s">${esc(o.text)}</div>`).join("")}</div>`
+    if (ph === "reveal") h = `<div class="eyebrow">Matchup ${S.index} of ${S.total}</div><div class="title">${esc(S.prompt)}</div>${S.quiplash ? '<div class="tag" style="font-size:24px">&#9889; QUIPLASH!</div>' : ""}
+      <div class="cards">${S.options.map(o => `<div class="cardx ${o.winner ? "win" : ""} pop">${esc(o.text)}${o.winner ? '<span class="tag">WINNER</span>' : ""}<small>${esc(o.author)}${S.gains && S.gains[o.authorId] ? " &middot; +" + S.gains[o.authorId] : ""}</small><div class="votes">${o.votes} vote${o.votes !== 1 ? "s" : ""}</div></div>`).join("")}</div>`
+  } else if (g === "bluff") {
+    if (ph === "lie") h = `${round()}<div class="title">${esc(S.prompt)}</div><div class="sub">Write a convincing lie on your phone!</div>${pills()}`
+    if (ph === "pick") h = `${round()}<div class="title" style="font-size:clamp(22px,3.6vw,54px)">${esc(S.prompt)}</div><div class="sub">Which one is TRUE? Pick on your phone</div>${pickList(S.options)}`
+    if (ph === "reveal") h = `${round()}<div class="title" style="font-size:clamp(22px,3.4vw,50px)">${esc(S.prompt)}</div><div class="sub" style="color:var(--good)">Answer: ${esc(S.truth)}</div>${reveals(S.options)}`
+  } else if (g === "draw") {
+    if (ph === "draw") h = `${round()}<div class="title">Everyone is drawing!</div><div class="sub">Check your phone for your secret prompt</div>${pills()}`
+    if (ph === "title") h = `<div class="eyebrow">Drawing ${S.index} of ${S.total} by ${esc(S.artist)}</div>${img()}<div class="sub">Make up a fake title on your phone!</div>${pills()}`
+    if (ph === "pick") h = `<div class="eyebrow">Drawing ${S.index} of ${S.total} by ${esc(S.artist)}</div>${img(true)}${pickList(S.options)}`
+    if (ph === "reveal") h = `<div class="eyebrow">Drawing ${S.index} of ${S.total} by ${esc(S.artist)}</div>${img(true)}<div class="sub" style="color:var(--good)">It was: ${esc(S.truth)}</div>${reveals(S.options)}`
+  } else if (g === "acro") {
+    const L = `<div class="letters">${(S.letters || []).map(x => `<span class="pop">${esc(x)}</span>`).join("")}</div>`
+    if (ph === "write") h = `${round()}${L}<div class="sub">Write a phrase using these letters in order</div>${pills()}`
+    if (ph === "vote") h = `${round()}${L}<div class="sub">Vote for the best phrase on your phone</div>${pickList(S.options)}`
+    if (ph === "reveal") h = `${round()}${L}${S.options.length ? reveals(S.options) : '<div class="sub">Not enough entries this round</div>'}`
+  } else if (g === "likely") {
+    if (ph === "vote") h = `${round()}<div class="sub">Who is most likely to...</div><div class="title">${esc(S.prompt)}?</div><div class="sub">Vote on your phone</div>${pills()}`
+    if (ph === "reveal") {
+      const max = Math.max(1, ...S.results.map(r => r.votes))
+      h = `${round()}<div class="title" style="font-size:clamp(22px,3.6vw,54px)">Most likely to ${esc(S.prompt)}</div><div class="board">${S.results.map(r => `
+        <div class="brow pop"><div class="bar" style="width:${Math.max(3, r.votes / max * 100)}%;${r.winner ? "background:linear-gradient(90deg,#4ade8055,#4ade8008)" : ""}"></div>
+        <span class="n">${esc(r.name)} ${r.winner ? "&#128081;" : ""}</span><span class="s">${r.votes}</span></div>`).join("")}</div>`
+    }
+  }
+  st.innerHTML = h
+}
+
+if (!code) askCode()
+</script>
+</body>
+</html>

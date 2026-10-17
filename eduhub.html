@@ -196,6 +196,13 @@ textarea{resize:vertical;min-height:80px}
 .mode-pill{padding:8px 14px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted)}
 .mode-pill.selected{background:var(--accent);color:#0a0a0f;border-color:var(--accent)}
 
+.badge-type-party{background:#2a1020;color:#ff6b9d}
+.lobby-card.party{border-left:3px solid #ff6b9d}
+.status-line{font-family:'Space Mono',monospace;font-size:12px;color:var(--text);background:#0f0f1a;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.5}
+.status-line b{color:var(--accent)}
+a.btn{text-decoration:none}
+.hint{font-size:11px;color:var(--muted);line-height:1.5;margin:-4px 0 12px}
+.landing-feature.wide{grid-column:1/-1}
 .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px}
 
 .danger-zone{border-top:1px solid var(--border);margin:12px 0 10px;padding-top:10px;display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--danger);text-transform:uppercase}
@@ -213,7 +220,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="landing-wrap">
     <div class="landing-eyebrow">EduHub BETA</div>
     <div class="landing-title">Run live classroom<br><span>games in seconds</span></div>
-    <div class="landing-sub">Host Bingo and Quiz sessions your students join instantly with a code with no installs, no accounts needed for players.</div>
+    <div class="landing-sub">Host Bingo, Quiz and Jackbox-style Party games your students join instantly with a code. No installs, no accounts needed for players.</div>
 
     <div class="landing-features">
       <div class="landing-feature">
@@ -225,6 +232,11 @@ textarea{resize:vertical;min-height:80px}
         <span class="landing-feature-icon badge-type-quiz">QUIZ</span>
         <div class="landing-feature-title">Quiz Modes</div>
         <div class="landing-feature-desc">Maze, Speed, and Survival modes with a live leaderboard plus boost &amp; chaos events.</div>
+      </div>
+      <div class="landing-feature wide">
+        <span class="landing-feature-icon badge-type-party">PARTY</span>
+        <div class="landing-feature-title">Party Games</div>
+        <div class="landing-feature-desc">Quip Battle, Bluff, Draw &amp; Guess, Acro Lash and Most Likely To. Put the big screen on the projector, everyone plays on their phone.</div>
       </div>
     </div>
 
@@ -315,6 +327,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="mode-pills">
         <div class="mode-pill selected" onclick="selectCreateType('bingo',this)">Bingo</div>
         <div class="mode-pill" onclick="selectCreateType('quiz',this)">Quiz</div>
+        <div class="mode-pill" onclick="selectCreateType('party',this)">Party</div>
       </div>
       <div id="gameModeRow" style="display:none;margin-bottom:12px">
         <div class="field-label" style="margin-bottom:8px">Quiz mode</div>
@@ -323,6 +336,11 @@ textarea{resize:vertical;min-height:80px}
           <div class="mode-pill" onclick="selectGM('speed',this)">Speed</div>
           <div class="mode-pill" onclick="selectGM('survival',this)">Survival</div>
         </div>
+      </div>
+      <div id="partyModeRow" style="display:none;margin-bottom:12px">
+        <div class="field-label" style="margin-bottom:8px">Party game</div>
+        <div class="mode-pills" id="partyPills"></div>
+        <div class="hint" id="partyDesc"></div>
       </div>
       <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer">
         <input type="checkbox" id="createPrivate" style="width:auto;margin-bottom:0">
@@ -387,15 +405,33 @@ textarea{resize:vertical;min-height:80px}
       <button class="btn btn-danger" onclick="lobbyAction('end')">End Session</button>
     </div>
 
+    <div class="card" id="partyControls" style="display:none">
+      <div class="card-title" id="partyTitle">Party Game</div>
+      <div class="status-line" id="partyStatus">Waiting for players to join</div>
+      <label class="field">
+        <div class="field-label" id="roundsLabel">Rounds</div>
+        <input type="number" id="partyRounds" min="1" max="15" value="3" onchange="savePartyRounds()">
+      </label>
+      <button class="btn btn-accent" onclick="lobbyAction('start')">Start Game</button>
+      <button class="btn btn-surface" onclick="lobbyAction('skip')">Skip to Next Phase</button>
+      <a class="btn btn-surface" id="bigScreenLink" href="#" target="_blank" rel="noopener">Open Big Screen</a>
+      <div class="hint">Put the Big Screen on a projector or TV. Players join on their phones with the code.</div>
+      <div class="danger-zone">Danger Zone</div>
+      <button class="btn btn-danger" onclick="lobbyAction('end')">End Session</button>
+    </div>
+
     <div class="card" id="quizControls" style="display:none">
-      <div class="card-title">Game Mode</div>
+      <div class="card-title">Quiz Session</div>
+      <div class="status-line" id="quizStatus">Not started</div>
+      <div class="field-label" style="margin-bottom:8px">Game mode</div>
       <div class="mode-pills" id="quizModePills">
-        <div class="mode-pill selected" onclick="selectLobbyGM('maze',this)">Maze</div>
-        <div class="mode-pill" onclick="selectLobbyGM('speed',this)">Speed</div>
-        <div class="mode-pill" onclick="selectLobbyGM('survival',this)">Survival</div>
+        <div class="mode-pill selected" data-gm="maze" onclick="selectLobbyGM('maze')">Maze</div>
+        <div class="mode-pill" data-gm="speed" onclick="selectLobbyGM('speed')">Speed</div>
+        <div class="mode-pill" data-gm="survival" onclick="selectLobbyGM('survival')">Survival</div>
       </div>
+      <div class="hint" id="modeHint"></div>
       <button class="btn btn-accent" onclick="lobbyAction('start')">Start Session</button>
-      <button class="btn btn-surface" onclick="lobbyAction('next-question')">Next Question</button>
+      <button class="btn btn-surface" id="quizNextBtn" onclick="lobbyAction('next-question')">Next Question</button>
       <button class="btn btn-surface" onclick="lobbyAction('reveal')">Reveal Answer</button>
       <div class="danger-zone">Danger Zone</div>
       <button class="btn btn-danger" onclick="lobbyAction('end')">End Session</button>
@@ -449,9 +485,13 @@ textarea{resize:vertical;min-height:80px}
         <div style="font-size:13px;font-weight:700">Tap to upload .json</div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">or paste below</div>
       </div>
+      <label class="field">
+        <div class="field-label">Seconds per question</div>
+        <input type="number" id="qTimer" min="5" max="120" value="30">
+      </label>
       <button class="btn btn-surface" onclick="togglePasteArea()">Paste JSON</button>
       <div id="pasteArea" style="display:none;margin-top:8px">
-        <textarea id="jsonPaste" placeholder='[{"question":"...","answers":[{"text":"...","correct":true}]}]'></textarea>
+        <textarea id="jsonPaste" placeholder='[{"question":"...","answers":[{"text":"...","correct":true},{"text":"..."}]}]'></textarea>
         <button class="btn btn-accent" onclick="loadFromPaste()">Load</button>
       </div>
     </div>
@@ -509,22 +549,34 @@ let currentUser = null
 let currentLobbyId = null
 let currentLobbyType = null
 let currentLobbyGM = "maze"
+let currentLobbyCode = null
 let allPlayers = []
 let localQuestions = []
 let currentEditIdx = null
 let banTargetEmail = null
 let createType = "bingo"
 let createGM = "maze"
+let createParty = null
+let partyGames = []
+let quizInfo = { phase: "idle", index: -1, total: 0, endsAt: 0, last: false }
+let quizTick = null
 
-const EVENTS = [
-  {id:"double_points",name:"2x Points",desc:"Next answer worth double",type:"boost"},
-  {id:"speed_bonus",name:"Speed Bonus",desc:"First 3 correct get +5",type:"boost"},
-  {id:"reveal_hint",name:"Hint Drop",desc:"Eliminate one wrong answer",type:"boost"},
-  {id:"bonus_question",name:"Bonus Round",desc:"Next question worth 3x",type:"boost"},
-  {id:"freeze_top",name:"Freeze Leader",desc:"Top player skips next question",type:"chaos"},
-  {id:"random_score",name:"Score Shuffle",desc:"Randomise points +/-20%",type:"chaos"},
-  {id:"steal_points",name:"Point Steal",desc:"Leader loses 10pts to 2nd",type:"chaos"},
-  {id:"invert_scores",name:"Score Flip",desc:"Last place jumps to top",type:"chaos"},
+const MODE_HINTS = {
+  maze: "Players walk a maze to the pad with their answer. 100 pts per correct answer.",
+  speed: "Faster correct answers earn more: 100-200 pts per question.",
+  survival: "One wrong or missing answer and you're out. Last one standing wins."
+}
+
+// Fallback list - replaced by the server's /events when it loads
+let EVENTS = [
+  {id:"double_points",name:"2x Points",desc:"Next reveal pays double",type:"boost"},
+  {id:"speed_bonus",name:"Speed Bonus",desc:"First 3 correct get +50",type:"boost"},
+  {id:"reveal_hint",name:"Hint Drop",desc:"Eliminate one wrong answer now",type:"boost"},
+  {id:"bonus_question",name:"Bonus Round",desc:"Next reveal pays triple",type:"boost"},
+  {id:"freeze_top",name:"Freeze Leader",desc:"Top player sits out next question",type:"chaos"},
+  {id:"random_score",name:"Score Shuffle",desc:"Everyone's points shift by up to 20%",type:"chaos"},
+  {id:"steal_points",name:"Point Steal",desc:"Leader loses up to 100 to 2nd place",type:"chaos"},
+  {id:"invert_scores",name:"Score Swap",desc:"Leader and last place trade scores",type:"chaos"},
 ]
 
 // ---- INIT ----
@@ -533,6 +585,8 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin() })
   document.getElementById("regPass").addEventListener("keydown", e => { if (e.key === "Enter") doRegister() })
   renderEvents()
+  fetch(API + "/events").then(r => r.json()).then(list => { if (Array.isArray(list) && list.length) { EVENTS = list; renderEvents() } }).catch(() => {})
+  loadPartyGames()
 })
 
 async function resumeSession() {
@@ -540,9 +594,15 @@ async function resumeSession() {
     const r = await apiFetch("/auth/me")
     currentUser = r
     enterDashboard()
-  } catch {
-    token = null
-    localStorage.removeItem("eduhub_token")
+  } catch (e) {
+    // Only forget the login when the server says the token is bad - not when it's just unreachable
+    if (e.status === 401 || e.status === 403) {
+      token = null
+      localStorage.removeItem("eduhub_token")
+    } else {
+      toast("Can't reach the server. Retrying...")
+      setTimeout(resumeSession, 3000)
+    }
   }
 }
 
@@ -555,6 +615,8 @@ function switchAuthTab(tab) {
 
 async function doLogin() {
   const email = v("loginEmail"), pass = v("loginPass")
+  const errEl = document.getElementById("loginErr")
+  errEl.textContent = ""
   try {
     const r = await apiFetch("/auth/login", "POST", { email, password: pass })
     token = r.token
@@ -562,15 +624,15 @@ async function doLogin() {
     currentUser = r.user
     enterDashboard()
   } catch (e) {
-    document.getElementById("loginErr").textContent = e.message
-    if (e.message == "Banned") {
-        document.getElementById("loginErr").textContent = "You have been permamently banned from using EduHub. Please contact admin"
-    }
+    errEl.textContent = e.message === "Banned"
+      ? "You have been permanently banned from using EduHub. Please contact admin"
+      : e.message
   }
 }
 
 async function doRegister() {
-  const username = v("regName"), email = v("regEmail"), password = v("regPass")
+  const username = v("regName"), email = v("regEmail"), password = document.getElementById("regPass").value
+  document.getElementById("regErr").textContent = ""
   try {
     const r = await apiFetch("/auth/register", "POST", { email, password, username })
     token = r.token
@@ -586,8 +648,8 @@ function doLogout() {
   token = null
   currentUser = null
   localStorage.removeItem("eduhub_token")
-  if (currentLobbyId) socket.emit("lobby_leave", { lobbyId: currentLobbyId })
   currentLobbyId = null
+  stopQuizTick()
   show("screenAuth")
 }
 
@@ -611,30 +673,56 @@ async function loadMyLobbies() {
   try {
     const list = await apiFetch("/lobbies/my")
     renderMyLobbies(list)
-  } catch(e) { toast("Failed to load lobbies") }
+  } catch(e) { toast("Failed to load lobbies: " + e.message) }
+}
+
+function lobbyLabel(l) {
+  if (l.type === "party") return (partyGames.find(g => g.id === l.gameMode)?.name || l.gameMode)
+  return l.type === "quiz" ? l.gameMode : "bingo"
 }
 
 function renderMyLobbies(list) {
   const el = document.getElementById("myLobbyList")
   if (!list.length) { el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0">No lobbies yet. Create one in the Create tab.</p>'; return }
   el.innerHTML = '<div class="lobby-grid">' + list.map(l => `
-    <div class="lobby-card ${l.type}" onclick="openLobby('${l.id}')">
+    <div class="lobby-card ${esc(l.type)}" data-open="${esc(l.id)}">
       <div class="lobby-name">${esc(l.name)}</div>
-      <div class="lobby-meta">${l.type === "quiz" ? l.gameMode : "bingo"} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""} - Code: ${l.code}</div>
+      <div class="lobby-meta">${esc(lobbyLabel(l))} - ${l.playerCount} player${l.playerCount !== 1 ? "s" : ""} - Code: ${esc(l.code)}</div>
       <div class="lobby-footer">
-        <span class="lobby-badge badge-type-${l.type}">${l.type.toUpperCase()}</span>
-        <span class="lobby-badge badge-${l.status}">${l.status.charAt(0).toUpperCase() + l.status.slice(1)}</span>
+        <span class="lobby-badge badge-type-${esc(l.type)}">${esc(l.type.toUpperCase())}</span>
+        <span class="lobby-badge badge-${esc(l.status)}">${esc(l.status.charAt(0).toUpperCase() + l.status.slice(1))}</span>
       </div>
     </div>
   `).join("") + "</div>"
+  el.querySelectorAll("[data-open]").forEach(c => c.onclick = () => openLobby(c.dataset.open))
 }
 
 // ---- CREATE LOBBY ----
+async function loadPartyGames() {
+  try {
+    partyGames = await (await fetch(API + "/party/games")).json()
+    createParty = createParty || partyGames[0]?.id
+    const el = document.getElementById("partyPills")
+    el.innerHTML = partyGames.map(g => `<div class="mode-pill ${g.id === createParty ? "selected" : ""}" data-pg="${esc(g.id)}">${esc(g.name)}</div>`).join("")
+    el.querySelectorAll("[data-pg]").forEach(p => p.onclick = () => selectParty(p.dataset.pg, p))
+    selectParty(createParty)
+  } catch { /* the server may just be restarting; the pills load again next time */ }
+}
+
+function selectParty(id, el) {
+  createParty = id
+  document.querySelectorAll("#partyPills .mode-pill").forEach(p => p.classList.toggle("selected", p.dataset.pg === id))
+  const g = partyGames.find(x => x.id === id)
+  document.getElementById("partyDesc").textContent = g ? g.desc + " (" + g.min + "+ players)" : ""
+}
+
 function selectCreateType(type, el) {
   createType = type
   document.querySelectorAll("#panel-create .mode-pills").item(0).querySelectorAll(".mode-pill").forEach(p => p.classList.remove("selected"))
   el.classList.add("selected")
   document.getElementById("gameModeRow").style.display = type === "quiz" ? "block" : "none"
+  document.getElementById("partyModeRow").style.display = type === "party" ? "block" : "none"
+  if (type === "party" && !partyGames.length) loadPartyGames()
 }
 
 function selectGM(gm, el) {
@@ -646,15 +734,19 @@ function selectGM(gm, el) {
 async function doCreateLobby() {
   const name = v("createName")
   const isPrivate = document.getElementById("createPrivate").checked
-  if (!name) { document.getElementById("createErr").textContent = "Enter a lobby name"; return }
-  document.getElementById("createErr").textContent = ""
+  const errEl = document.getElementById("createErr")
+  if (!name) { errEl.textContent = "Enter a lobby name"; return }
+  if (createType === "party" && !createParty) { errEl.textContent = "Pick a party game"; return }
+  errEl.textContent = ""
   try {
-    const r = await apiFetch("/lobbies", "POST", { name, type: createType, gameMode: createType === "quiz" ? createGM : undefined, isPrivate })
+    const gameMode = createType === "quiz" ? createGM : createType === "party" ? createParty : undefined
+    const r = await apiFetch("/lobbies", "POST", { name, type: createType, gameMode, isPrivate })
     toast("Lobby created!")
     switchDashTab("my")
+    document.getElementById("createName").value = ""
     await loadMyLobbies()
     openLobby(r.id)
-  } catch(e) { document.getElementById("createErr").textContent = e.message }
+  } catch(e) { errEl.textContent = e.message }
 }
 
 // ---- LOBBY MANAGEMENT ----
@@ -664,22 +756,37 @@ async function openLobby(id) {
     const data = await apiFetch("/lobbies/" + id + "/full")
     currentLobbyType = data.type
     currentLobbyGM = data.gameMode || "maze"
+    currentLobbyCode = data.code
     allPlayers = data.players || []
+    localQuestions = (data.config && Array.isArray(data.config.questions)) ? data.config.questions : []
+    document.getElementById("qTimer").value = (data.config && data.config.timer) || 30
+    document.getElementById("jsonPaste").value = ""
 
     document.getElementById("lobbyHeaderName").textContent = "// " + data.name
     document.getElementById("lobbyCode").textContent = data.code || "------"
     renderJoinQR(data.type, data.code)
-    updateLobbyStatus(data.status)
 
+    document.getElementById("questionsTab").style.display = data.type === "quiz" ? "block" : "none"
     document.getElementById("bingoControls").style.display = data.type === "bingo" ? "block" : "none"
     document.getElementById("quizControls").style.display = data.type === "quiz" ? "block" : "none"
     document.getElementById("quizEvents").style.display = data.type === "quiz" ? "block" : "none"
-    document.getElementById("questionsTab").style.display = data.type === "quiz" ? "block" : "none"
+    document.getElementById("partyControls").style.display = data.type === "party" ? "block" : "none"
 
     if (data.type === "bingo") {
       document.getElementById("calledCount").textContent = data.game?.calledNumbers?.length || 0
+      const last = data.game?.calledNumbers?.at(-1)
+      document.getElementById("lastCalledNum").textContent = last ?? "-"
     }
+    if (data.type === "quiz") {
+      setQuizModePills(currentLobbyGM)
+      const g = data.game || {}
+      quizInfo = { phase: g.phase || "idle", index: g.questionIndex ?? -1, total: g.total || localQuestions.length, endsAt: 0, last: false }
+      updateQuizStatus()
+      renderQuestionList()
+    }
+    if (data.type === "party") setupPartyUI(data)
 
+    updateLobbyStatus(data.status)
     renderPlayers(allPlayers)
     renderLeaderboard(allPlayers)
     renderResults(data.results || [])
@@ -690,18 +797,37 @@ async function openLobby(id) {
   } catch(e) { toast("Failed to load lobby: " + e.message) }
 }
 
+function setupPartyUI(data) {
+  const g = partyGames.find(x => x.id === data.gameMode)
+  document.getElementById("partyTitle").textContent = g ? g.name : "Party Game"
+  const lab = document.getElementById("roundsLabel")
+  lab.textContent = g ? "Number of " + g.unit : "Rounds"
+  const inp = document.getElementById("partyRounds")
+  inp.min = g ? g.minRounds : 1
+  inp.max = g ? g.maxRounds : 15
+  inp.value = (data.config && data.config.rounds) || (g ? g.rounds : 3)
+  document.getElementById("bigScreenLink").href = bigScreenUrl()
+  document.getElementById("partyStatus").innerHTML = data.game?.party
+    ? partyStatusHtml({ gameName: g?.name, phase: data.game.party.phase, round: data.game.party.round, rounds: data.game.party.rounds })
+    : "Waiting for players to join. <b>" + (g ? g.min : 3) + "+</b> needed to start."
+}
+
+function pageUrl(page) { return location.origin + location.pathname.replace(/[^/]*$/, "") + page }
+function bigScreenUrl() { return pageUrl("partyscreen.html") + "?code=" + encodeURIComponent(currentLobbyCode || "") }
+
 function renderJoinQR(type, code) {
   if (!code) return
-  const page = type === "bingo" ? "bingo.html" : "gamemodeplayer.html"
-  const link = location.origin + location.pathname.replace(/[^/]*$/, "") + page + "?code=" + code
+  const page = type === "bingo" ? "bingo.html" : type === "party" ? "party.html" : "gamemodeplayer.html"
+  const link = pageUrl(page) + "?code=" + code
   document.getElementById("joinLink").textContent = link
   const el = document.getElementById("joinQR")
   el.innerHTML = ""
-  new QRCode(el, { text: link, width: 160, height: 160, colorDark: "#0a0a0f", colorLight: "#c8f545" })
+  try { new QRCode(el, { text: link, width: 160, height: 160, colorDark: "#0a0a0f", colorLight: "#c8f545" }) } catch {}
 }
 
 function backToDash() {
   currentLobbyId = null
+  stopQuizTick()
   show("screenDash")
   loadMyLobbies()
 }
@@ -721,17 +847,17 @@ function updateLobbyStatus(status) {
   const ended = status === "ended"
   document.getElementById("endedCard").style.display = ended ? "block" : "none"
   if (ended) {
-    document.getElementById("bingoControls").style.display = "none"
-    document.getElementById("quizControls").style.display = "none"
-    document.getElementById("quizEvents").style.display = "none"
+    ;["bingoControls", "quizControls", "quizEvents", "partyControls"].forEach(id => document.getElementById(id).style.display = "none")
   }
 }
 
-function selectLobbyGM(gm, el) {
+function setQuizModePills(gm) {
   currentLobbyGM = gm
-  document.getElementById("quizModePills").querySelectorAll(".mode-pill").forEach(p => p.classList.remove("selected"))
-  el.classList.add("selected")
+  document.getElementById("quizModePills").querySelectorAll(".mode-pill").forEach(p => p.classList.toggle("selected", p.dataset.gm === gm))
+  document.getElementById("modeHint").textContent = MODE_HINTS[gm] || ""
 }
+
+function selectLobbyGM(gm) { setQuizModePills(gm) }
 
 async function deleteLobby() {
   if (!currentLobbyId) return
@@ -745,7 +871,7 @@ async function deleteLobby() {
 async function lobbyAction(action) {
   if (!currentLobbyId) return
   let body = {}
-  let url = "/lobbies/" + currentLobbyId + "/" + action
+  const url = "/lobbies/" + currentLobbyId + "/" + action
 
   if (action === "start" && currentLobbyType === "quiz") body.gameMode = currentLobbyGM
   if (action === "broadcast") {
@@ -753,44 +879,95 @@ async function lobbyAction(action) {
     if (!msg) return
     body.message = msg
   }
+  if (action === "end" && !confirm("End this session for everyone?")) return
 
   try {
+    if (action === "start" && currentLobbyType === "party") await savePartyRounds(true)
     const r = await apiFetch(url, "POST", body)
     if (action === "call" && r.number !== undefined) {
       document.getElementById("lastCalledNum").textContent = r.number
-      const cnt = parseInt(document.getElementById("calledCount").textContent || "0") + 1
-      document.getElementById("calledCount").textContent = cnt
+      document.getElementById("calledCount").textContent = r.count ?? (parseInt(document.getElementById("calledCount").textContent || "0") + 1)
     }
     if (action === "broadcast") document.getElementById("broadcastMsg").value = ""
-    if (action === "end") { updateLobbyStatus("ended"); allPlayers = []; renderPlayers([]); loadLobbyResults() }
-    if (action === "start") updateLobbyStatus("live")
-    toast("Done: " + action)
-  } catch(e) { toast("Error: " + e.message) }
+    if (action === "end") { updateLobbyStatus("ended"); allPlayers = []; renderPlayers([]); renderLeaderboard([]); loadLobbyResults() }
+    if (action === "start") {
+      updateLobbyStatus("live")
+      if (currentLobbyType === "bingo") { document.getElementById("lastCalledNum").textContent = "-"; document.getElementById("calledCount").textContent = "0" }
+    }
+    toast(({ start: "Started!", call: "Called " + r.number, "next-question": r.did === "reveal" ? "Answer revealed" : "Next question", reveal: "Answer revealed", skip: "Skipped ahead", broadcast: "Message sent", end: "Session ended" })[action] || "Done")
+  } catch(e) { toast(e.message) }
+}
+
+async function savePartyRounds(silent) {
+  if (currentLobbyType !== "party" || !currentLobbyId) return
+  const rounds = parseInt(document.getElementById("partyRounds").value, 10)
+  try {
+    const r = await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", { config: { rounds } })
+    if (r.config) document.getElementById("partyRounds").value = r.config.rounds
+    if (!silent) toast("Saved")
+  } catch(e) { if (!silent) toast("Error: " + e.message); else throw e }
 }
 
 async function fireEvent(eventId) {
   if (!currentLobbyId) return
   try {
-    await apiFetch("/lobbies/" + currentLobbyId + "/event", "POST", { eventId })
+    const r = await apiFetch("/lobbies/" + currentLobbyId + "/event", "POST", { eventId })
     const ev = EVENTS.find(e => e.id === eventId)
-    toast("Event: " + (ev?.name || eventId))
-  } catch(e) { toast("Error: " + e.message) }
+    toast((ev?.name || eventId) + (r.info ? ": " + r.info : ""))
+  } catch(e) { toast(e.message) }
 }
 
 async function kickPlayerFromLobby(playerId) {
   try {
-    await apiFetch("/lobbies/" + currentLobbyId + "/kick/" + playerId, "POST")
+    await apiFetch("/lobbies/" + currentLobbyId + "/kick/" + encodeURIComponent(playerId), "POST")
     toast("Player kicked")
   } catch(e) { toast("Error: " + e.message) }
 }
 
-// ---- SOCKET (host receiving player updates) ----
+// ---- QUIZ STATUS ----
+function stopQuizTick() { if (quizTick) clearInterval(quizTick); quizTick = null }
+
+function updateQuizStatus() {
+  const el = document.getElementById("quizStatus")
+  const nextBtn = document.getElementById("quizNextBtn")
+  if (!el) return
+  const q = quizInfo
+  const live = allPlayers.filter(p => !p.disconnected && p.alive !== false && !p.frozen)
+  const answered = live.filter(p => p.answered).length
+  let html = ""
+  if (q.phase === "question") {
+    const left = q.endsAt ? Math.max(0, Math.ceil((q.endsAt - Date.now()) / 1000)) : null
+    html = `Question <b>${q.index + 1}/${q.total}</b> live - <b>${answered}/${live.length}</b> answered` + (left !== null ? ` - <b>${left}s</b> left` : "")
+    nextBtn.textContent = "Reveal Now"
+  } else if (q.phase === "reveal") {
+    html = `Question <b>${q.index + 1}/${q.total}</b> revealed. ` + (q.last ? "That was the last one - finish when ready." : "Ready for the next one.")
+    nextBtn.textContent = q.last ? "Finish Quiz" : "Next Question"
+  } else {
+    html = q.total ? `${q.total} question${q.total !== 1 ? "s" : ""} ready. Press Start when players have joined.` : "No questions yet. Add some in the Questions tab and push them."
+    nextBtn.textContent = "Next Question"
+  }
+  el.innerHTML = html
+  stopQuizTick()
+  if (q.phase === "question" && q.endsAt) quizTick = setInterval(updateQuizStatus, 1000)
+}
+
+function partyStatusHtml(s) {
+  const names = { intro: "Intro", write: "Players are writing", vote: "Voting", reveal: "Results", scores: "Scoreboard", final: "Final scores", lie: "Players are writing lies", pick: "Players are picking", draw: "Players are drawing", title: "Players are writing titles" }
+  const where = s.phase === "final" ? "" : s.round ? ` - ${(s.rounds ? "round " + s.round + "/" + s.rounds : "")}` : ""
+  return `<b>${esc(s.gameName || "Party")}</b>${where}<br>${esc(names[s.phase] || s.phase)}`
+}
+
+// ---- SOCKET (host receiving updates) ----
+socket.on("connect", () => {
+  if (currentLobbyId && token) socket.emit("host_join", { lobbyId: currentLobbyId, token })
+})
+
 socket.on("players_update", players => {
   if (!currentLobbyId) return
   allPlayers = players
   renderPlayers(players)
   renderLeaderboard(players)
-  document.getElementById("playerCountLabel").textContent = players.filter(p => !p.disconnected).length + " online"
+  if (currentLobbyType === "quiz") updateQuizStatus()
 })
 
 socket.on("number_called", n => {
@@ -800,46 +977,93 @@ socket.on("number_called", n => {
   document.getElementById("calledCount").textContent = cnt
 })
 
-socket.on("event_applied", ({ eventId }) => {
-  const ev = EVENTS.find(e => e.id === eventId)
-  if (ev) toast("Event fired: " + ev.name)
+socket.on("quiz_started", ({ total }) => {
+  if (!currentLobbyId) return
+  quizInfo = { phase: "question", index: 0, total: total || localQuestions.length, endsAt: 0, last: false }
+  updateLobbyStatus("live")
+  updateQuizStatus()
 })
 
-socket.on("quiz_game_complete", ({ players }) => {
+socket.on("quiz_question", q => {
+  if (!currentLobbyId) return
+  quizInfo = { phase: "question", index: q.index, total: q.total, endsAt: Date.now() + (q.endsAt - q.serverNow), last: false }
+  updateQuizStatus()
+})
+
+socket.on("quiz_reveal", r => {
+  if (!currentLobbyId) return
+  quizInfo.phase = "reveal"
+  quizInfo.last = !!r.last
+  updateQuizStatus()
+})
+
+socket.on("quiz_info", ({ message }) => { if (currentLobbyId) toast(message) })
+
+socket.on("event_applied", ({ name, info }) => {
+  if (currentLobbyId && name) toast("Event fired: " + name + (info ? " - " + info : ""))
+})
+
+socket.on("party_state", s => {
+  if (!currentLobbyId || currentLobbyType !== "party") return
+  document.getElementById("partyStatus").innerHTML = partyStatusHtml(s)
+})
+
+socket.on("session_complete", () => {
+  if (!currentLobbyId) return
   updateLobbyStatus("waiting")
+  if (currentLobbyType === "quiz") { quizInfo.phase = "idle"; updateQuizStatus() }
   toast("Game complete!")
   loadLobbyResults()
 })
 
-socket.on("game_ended", () => {
-  updateLobbyStatus("waiting")
+socket.on("game_ended", ({ reason } = {}) => {
+  if (!currentLobbyId) return
+  if (reason === "Lobby deleted") return
+  updateLobbyStatus("ended")
   allPlayers = []
   renderPlayers([])
 })
 
+socket.on("error_msg", m => { if (currentLobbyId) toast(m) })
+
 // ---- PLAYER RENDER ----
+function playerMeta(p) {
+  if (currentLobbyType === "quiz") return "Score: " + (p.score || 0) + (p.answered ? " - answered" : "") + (p.frozen ? " - frozen" : "")
+  if (currentLobbyType === "party") return "Score: " + (p.score || 0)
+  return p.hasBingo ? "BINGO" : p.marksCount + " marks"
+}
+
+function playerBadge(p) {
+  if (p.disconnected) return ["badge-disc", "Away"]
+  if (currentLobbyType === "quiz") return p.alive ? ["badge-alive", "Alive"] : ["badge-dead", "Out"]
+  return ["badge-alive", "In game"]
+}
+
 function renderPlayers(players) {
   const el = document.getElementById("lobbyPlayerList")
   document.getElementById("playerCountLabel").textContent = players.filter(p => !p.disconnected).length + " online"
   if (!players.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No players yet</p>'; return }
-  el.innerHTML = players.map(p => `
+  el.innerHTML = players.map(p => {
+    const [bc, bt] = playerBadge(p)
+    return `
     <div class="player-item">
-      <div class="player-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="player-avatar">${esc(p.name.charAt(0).toUpperCase())}</div>
       <div class="player-info">
         <div class="player-name">${esc(p.name)}</div>
-        <div class="player-meta-text">${currentLobbyType === "quiz" ? "Score: " + p.score + " - Q" + p.progress : (p.hasBingo ? "BINGO" : p.marksCount + " marks")}</div>
+        <div class="player-meta-text">${esc(playerMeta(p))}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <span class="badge ${p.disconnected ? "badge-disc" : (currentLobbyType === "quiz" ? (p.alive ? "badge-alive" : "badge-dead") : "badge-alive")}">${p.disconnected ? "Away" : (currentLobbyType === "quiz" ? (p.alive ? "Alive" : "Dead") : "In game")}</span>
-        <button class="btn btn-sm btn-danger" onclick="kickPlayerFromLobby('${p.playerId}')">Kick</button>
+        <span class="badge ${bc}">${bt}</span>
+        <button class="btn btn-sm btn-danger" data-kick="${esc(p.playerId)}">Kick</button>
       </div>
-    </div>
-  `).join("")
+    </div>`
+  }).join("")
+  el.querySelectorAll("[data-kick]").forEach(b => b.onclick = () => kickPlayerFromLobby(b.dataset.kick))
 }
 
 function renderLeaderboard(players) {
   const sorted = [...players].filter(p => !p.disconnected).sort((a, b) => (b.score || 0) - (a.score || 0))
-  const max = sorted[0]?.score || 1
+  const max = Math.max(1, sorted[0]?.score || 0)
   const el = document.getElementById("lobbyLeaderboard")
   if (!sorted.length) { el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0;font-size:13px">No players yet</p>'; return }
   const medals = ["gold","silver","bronze"]
@@ -870,40 +1094,35 @@ function renderResults(results) {
   if (!results.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">No results yet</p>'; return }
   el.innerHTML = [...results].reverse().map((r, i) => `
     <div class="result-session">
-      <div class="result-time">Session ${results.length - i} - ${r.gameType} - ${new Date(r.endedAt).toLocaleString()}</div>
-      ${r.players.map(p => `
+      <div class="result-time">Session ${results.length - i} - ${esc(String(r.gameType).replace("party:", ""))} - ${new Date(r.endedAt).toLocaleString()}</div>
+      ${[...r.players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).map(p => `
         <div class="result-player">
           <span>${esc(p.name)}</span>
           <span style="font-family:'Space Mono',monospace;color:var(--accent)">${p.score !== undefined ? p.score + " pts" : (p.hasBingo ? "BINGO" : "-")}</span>
         </div>
       `).join("")}
-      ${r.winners ? `<div style="margin-top:6px;font-size:11px;color:#4ade80">Winners: ${r.winners.join(", ") || "None"}</div>` : ""}
+      ${r.winners ? `<div style="margin-top:6px;font-size:11px;color:#4ade80">Winners: ${esc(r.winners.join(", ") || "None")}</div>` : ""}
     </div>
   `).join("")
 }
 
 // ---- EVENTS RENDER ----
 function renderEvents() {
-  const boostEl = document.getElementById("boostEvGrid")
-  const chaosEl = document.getElementById("chaosEvGrid")
-  boostEl.innerHTML = EVENTS.filter(e => e.type === "boost").map(e => `
-    <div class="event-card boost" onclick="fireEvent('${e.id}')">
-      <div class="event-name">${e.name}</div>
-      <div class="event-desc">${e.desc}</div>
-    </div>
-  `).join("")
-  chaosEl.innerHTML = EVENTS.filter(e => e.type === "chaos").map(e => `
-    <div class="event-card chaos" onclick="fireEvent('${e.id}')">
-      <div class="event-name">${e.name}</div>
-      <div class="event-desc">${e.desc}</div>
-    </div>
-  `).join("")
+  const card = e => `
+    <div class="event-card ${esc(e.type)}" data-ev="${esc(e.id)}">
+      <div class="event-name">${esc(e.name)}</div>
+      <div class="event-desc">${esc(e.desc)}</div>
+    </div>`
+  document.getElementById("boostEvGrid").innerHTML = EVENTS.filter(e => e.type === "boost").map(card).join("")
+  document.getElementById("chaosEvGrid").innerHTML = EVENTS.filter(e => e.type === "chaos").map(card).join("")
+  document.querySelectorAll("[data-ev]").forEach(c => c.onclick = () => fireEvent(c.dataset.ev))
 }
 
 // ---- QUESTION EDITOR ----
 function addQuestion() {
   localQuestions.push({ question: "New Question", answers: [{ text: "Correct Answer", correct: true }, { text: "Wrong Answer", correct: false }] })
   renderQuestionList()
+  openEdit(localQuestions.length - 1)
 }
 
 function renderQuestionList() {
@@ -935,8 +1154,8 @@ function openEdit(i) {
 function renderAnswers(answers) {
   document.getElementById("answerList").innerHTML = answers.map((a, i) => `
     <div class="answer-row">
-      <input type="text" value="${esc(a.text)}" oninput="updateAns(${i},this.value)">
-      <button class="correct-btn ${a.correct ? "selected" : ""}" onclick="setCorrect(${i})">v</button>
+      <input type="text" value="${esc(a.text)}" oninput="updateAns(${i},this.value)" maxlength="150">
+      <button class="correct-btn ${a.correct ? "selected" : ""}" onclick="setCorrect(${i})" title="Mark as the correct answer">&#10003;</button>
       <button class="btn btn-sm btn-danger" onclick="removeAnswer(${i})" style="width:32px;height:32px;padding:0;border-radius:50%;margin-bottom:0">x</button>
     </div>
   `).join("")
@@ -948,12 +1167,17 @@ function setCorrect(idx) {
   renderAnswers(localQuestions[currentEditIdx].answers)
 }
 function addAnswer() {
-  localQuestions[currentEditIdx].answers.push({ text: "Option", correct: false })
-  renderAnswers(localQuestions[currentEditIdx].answers)
+  const a = localQuestions[currentEditIdx].answers
+  if (a.length >= 6) { toast("Max 6 answers"); return }
+  a.push({ text: "Option", correct: false })
+  renderAnswers(a)
 }
 function removeAnswer(idx) {
-  localQuestions[currentEditIdx].answers.splice(idx, 1)
-  renderAnswers(localQuestions[currentEditIdx].answers)
+  const a = localQuestions[currentEditIdx].answers
+  if (a.length <= 2) { toast("Need at least 2 answers"); return }
+  a.splice(idx, 1)
+  if (!a.some(x => x.correct)) a[0].correct = true
+  renderAnswers(a)
 }
 function saveQuestion() {
   localQuestions[currentEditIdx].question = document.getElementById("qTextInput").value
@@ -967,6 +1191,7 @@ function loadQFile(input) {
   const r = new FileReader()
   r.onload = e => { try { applyJSON(JSON.parse(e.target.result)) } catch { toast("Invalid JSON") } }
   r.readAsText(file)
+  input.value = ""
 }
 
 function loadFromPaste() {
@@ -980,22 +1205,31 @@ function togglePasteArea() {
 }
 
 function applyJSON(data) {
-  if (Array.isArray(data)) localQuestions = data
-  else if (data.maze) localQuestions = data.maze
-  else if (data.speed) localQuestions = data.speed
-  else if (data.survival) localQuestions = data.survival
-  else { toast("Unrecognised format"); return }
+  let list = null
+  if (Array.isArray(data)) list = data
+  else if (data && Array.isArray(data.questions)) list = data.questions
+  else if (data) list = data.maze || data.speed || data.survival
+  if (!Array.isArray(list)) { toast("Unrecognised format"); return }
+  // Accept answers given as plain strings too ("correct" then marks the right one by index)
+  localQuestions = list.map(q => ({
+    question: String(q.question ?? q.q ?? ""),
+    answers: (q.answers || []).map((a, i) => typeof a === "string"
+      ? { text: a, correct: i === (q.correct ?? q.correctIndex ?? 0) }
+      : { text: String(a.text ?? ""), correct: !!a.correct })
+  }))
+  if (data && data.timer) document.getElementById("qTimer").value = data.timer
   renderQuestionList()
-  toast("Loaded " + localQuestions.length + " questions")
+  toast("Loaded " + localQuestions.length + " questions - press Push to server")
 }
 
 async function pushConfig() {
   if (!localQuestions.length) { toast("No questions to push"); return }
+  const timer = parseInt(document.getElementById("qTimer").value, 10) || 30
   try {
-    await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", {
-      config: { maze: localQuestions, speed: localQuestions, survival: localQuestions }
-    })
-    toast("Config pushed!")
+    await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", { config: { questions: localQuestions, timer } })
+    quizInfo.total = localQuestions.length
+    if (quizInfo.phase === "idle") updateQuizStatus()
+    toast("Pushed " + localQuestions.length + " questions!")
   } catch(e) { toast("Error: " + e.message) }
 }
 
@@ -1019,12 +1253,14 @@ function renderAdminUsers(users) {
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         ${u.banned
-          ? `<button class="btn btn-sm btn-surface" onclick="unbanUser('${esc(u.email)}')">Unban</button>`
-          : `<button class="btn btn-sm btn-danger" onclick="openBanModal('${esc(u.email)}')">Ban</button>`
+          ? `<button class="btn btn-sm btn-surface" data-unban="${esc(u.email)}">Unban</button>`
+          : `<button class="btn btn-sm btn-danger" data-ban="${esc(u.email)}">Ban</button>`
         }
       </div>
     </div>
   `).join("")
+  el.querySelectorAll("[data-unban]").forEach(b => b.onclick = () => unbanUser(b.dataset.unban))
+  el.querySelectorAll("[data-ban]").forEach(b => b.onclick = () => openBanModal(b.dataset.ban))
 }
 
 async function loadAdminLobbies() {
@@ -1033,15 +1269,16 @@ async function loadAdminLobbies() {
     const el = document.getElementById("adminLobbyList")
     if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No lobbies</p>'; return }
     el.innerHTML = list.map(l => `
-      <div class="lobby-card ${l.type}" style="margin-bottom:8px" onclick="openLobby('${l.id}')">
+      <div class="lobby-card ${esc(l.type)}" style="margin-bottom:8px" data-open="${esc(l.id)}">
         <div class="lobby-name">${esc(l.name)}</div>
-        <div class="lobby-meta">Host: ${esc(l.hostEmail)} - Code: ${l.code} - ${l.playerCount} players</div>
+        <div class="lobby-meta">Host: ${esc(l.hostEmail)} - Code: ${esc(l.code)} - ${l.playerCount} players</div>
         <div class="lobby-footer">
-          <span class="lobby-badge badge-type-${l.type}">${l.type.toUpperCase()}</span>
-          <span class="lobby-badge badge-${l.status}">${l.status}</span>
+          <span class="lobby-badge badge-type-${esc(l.type)}">${esc(l.type.toUpperCase())}</span>
+          <span class="lobby-badge badge-${esc(l.status)}">${esc(l.status)}</span>
         </div>
       </div>
     `).join("")
+    el.querySelectorAll("[data-open]").forEach(c => c.onclick = () => openLobby(c.dataset.open))
   } catch(e) { toast("Error: " + e.message) }
 }
 
@@ -1079,15 +1316,17 @@ function show(id) {
 function v(id) { return document.getElementById(id).value.trim() }
 
 function esc(s) {
-  if (!s) return ""
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+  if (s == null) return ""
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")
 }
 
+let toastTimer = null
 function toast(msg) {
   const t = document.getElementById("toast")
   t.textContent = msg
   t.classList.add("show")
-  setTimeout(() => t.classList.remove("show"), 2400)
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2800)
 }
 
 function handleModalClick(e) { if (e.target.classList.contains("modal-overlay")) closeModal(e.target.id) }
@@ -1097,9 +1336,16 @@ async function apiFetch(path, method = "GET", body = null) {
   const opts = { method, headers: { "Content-Type": "application/json" } }
   if (token) opts.headers["Authorization"] = "Bearer " + token
   if (body) opts.body = JSON.stringify(body)
-  const r = await fetch(API + path, opts)
-  const data = await r.json()
-  if (!r.ok) throw new Error(data.error || "Request failed")
+  let r
+  try { r = await fetch(API + path, opts) }
+  catch { const e = new Error("Can't reach the server"); e.status = 0; throw e }
+  let data = {}
+  try { data = await r.json() } catch { /* non-JSON error page */ }
+  if (!r.ok) {
+    const e = new Error(r.status === 429 ? (data.error || "Too many attempts. Wait a few minutes and try again.") : (data.error || "Request failed (" + r.status + ")"))
+    e.status = r.status
+    throw e
+  }
   return data
 }
 </script>
