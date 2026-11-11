@@ -286,8 +286,10 @@ a.btn{text-decoration:none}
         <input type="password" id="regPass" placeholder="At least 6 characters" autocomplete="new-password">
       </label>
       <div class="err-msg" id="regErr"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">By creating an account you accept the <a href="terms.html" target="_blank" style="color:var(--accent)">Terms of Service</a> and <a href="privacy.html" target="_blank" style="color:var(--accent)">Privacy Policy</a>.</div>
       <button class="btn btn-accent" onclick="doRegister()">Create account</button>
     </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px"><a href="terms.html" style="color:var(--muted)">Terms</a> &middot; <a href="privacy.html" style="color:var(--muted)">Privacy</a></div>
   </div>
 </div>
 
@@ -354,13 +356,24 @@ a.btn{text-decoration:none}
   <!-- ADMIN PANEL -->
   <div class="panel" id="panel-admin">
     <div class="card">
+      <div class="card-title">Overview</div>
+      <div id="adminStats" class="status-line">Loading...</div>
+      <button class="btn btn-sm btn-surface" onclick="loadAdminAll()">Refresh all</button>
+    </div>
+    <div class="card" style="margin-top:8px">
+      <div class="card-title">Announcement</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Sends a message to every active lobby (shown as a broadcast).</div>
+      <input type="text" id="announceMsg" placeholder="Message (max 200 chars)" maxlength="200">
+      <button class="btn btn-sm btn-accent" onclick="sendAnnounce()">Send to all lobbies</button>
+    </div>
+    <div class="card" style="margin-top:8px">
       <div class="card-title">Users</div>
-      <button class="btn btn-sm btn-surface" onclick="loadAdminUsers()" style="margin-bottom:12px">Refresh</button>
+      <input type="text" id="adminUserSearch" placeholder="Search email or username..." oninput="renderAdminUsers()">
       <div id="adminUserList"><p style="color:var(--muted);font-size:13px">Loading...</p></div>
     </div>
     <div class="card" style="margin-top:8px">
       <div class="card-title">All Lobbies</div>
-      <button class="btn btn-sm btn-surface" onclick="loadAdminLobbies()" style="margin-bottom:12px">Refresh</button>
+      <input type="text" id="adminLobbySearch" placeholder="Search name, host or code..." oninput="renderAdminLobbies()">
       <div id="adminLobbyList"><p style="color:var(--muted);font-size:13px">Loading...</p></div>
     </div>
   </div>
@@ -489,6 +502,11 @@ a.btn{text-decoration:none}
         <div class="field-label">Seconds per question</div>
         <input type="number" id="qTimer" min="5" max="120" value="30">
       </label>
+      <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="qShuffle" style="width:auto;margin-bottom:0">
+        <span>Shuffle answer order for each player</span>
+      </label>
+      <div class="hint">Off by default, so A/B/C/D mean the same answer on every device. Turn it on to stop students copying a neighbour.</div>
       <button class="btn btn-surface" onclick="togglePasteArea()">Paste JSON</button>
       <div id="pasteArea" style="display:none;margin-top:8px">
         <textarea id="jsonPaste" placeholder='[{"question":"...","answers":[{"text":"...","correct":true},{"text":"..."}]}]'></textarea>
@@ -534,6 +552,18 @@ a.btn{text-decoration:none}
     <div id="banTarget" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
     <input type="text" id="banReason" placeholder="Reason (optional)">
     <button class="btn btn-danger" onclick="confirmBan()">Confirm Ban</button>
+  </div>
+</div>
+
+<!-- TEMP PASSWORD MODAL -->
+<div class="modal-overlay" id="pwModal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Password reset</div>
+    <div id="pwTarget" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
+    <div class="code-display" id="pwValue" style="font-size:20px;letter-spacing:2px;user-select:all"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Shown once. Send it to the user and tell them to change it.</div>
+    <button class="btn btn-surface" onclick="closeModal('pwModal')">Close</button>
   </div>
 </div>
 
@@ -659,7 +689,7 @@ function enterDashboard() {
   if (currentUser.isAdmin) document.getElementById("adminTab").style.display = "block"
   show("screenDash")
   loadMyLobbies()
-  if (currentUser.isAdmin) { loadAdminUsers(); loadAdminLobbies() }
+  if (currentUser.isAdmin) { loadAdminAll() }
 }
 
 function switchDashTab(name) {
@@ -699,14 +729,24 @@ function renderMyLobbies(list) {
 
 // ---- CREATE LOBBY ----
 async function loadPartyGames() {
+  const el = document.getElementById("partyPills")
+  const desc = document.getElementById("partyDesc")
   try {
-    partyGames = await (await fetch(API + "/party/games")).json()
-    createParty = createParty || partyGames[0]?.id
-    const el = document.getElementById("partyPills")
+    const r = await fetch(API + "/party/games")
+    const list = await r.json()
+    if (!r.ok || !Array.isArray(list) || !list.length) throw new Error("bad response")
+    partyGames = list
+    createParty = createParty || partyGames[0].id
     el.innerHTML = partyGames.map(g => `<div class="mode-pill ${g.id === createParty ? "selected" : ""}" data-pg="${esc(g.id)}">${esc(g.name)}</div>`).join("")
     el.querySelectorAll("[data-pg]").forEach(p => p.onclick = () => selectParty(p.dataset.pg, p))
     selectParty(createParty)
-  } catch { /* the server may just be restarting; the pills load again next time */ }
+  } catch {
+    partyGames = []
+    createParty = null
+    el.innerHTML = '<div class="mode-pill" id="partyRetry">Retry</div>'
+    document.getElementById("partyRetry").onclick = loadPartyGames
+    desc.textContent = "Couldn't load the party games. The server may be offline or still running an older version that doesn't have them yet."
+  }
 }
 
 function selectParty(id, el) {
@@ -736,7 +776,7 @@ async function doCreateLobby() {
   const isPrivate = document.getElementById("createPrivate").checked
   const errEl = document.getElementById("createErr")
   if (!name) { errEl.textContent = "Enter a lobby name"; return }
-  if (createType === "party" && !createParty) { errEl.textContent = "Pick a party game"; return }
+  if (createType === "party" && !createParty) { errEl.textContent = "No party games available - the server may need updating"; return }
   errEl.textContent = ""
   try {
     const gameMode = createType === "quiz" ? createGM : createType === "party" ? createParty : undefined
@@ -760,6 +800,7 @@ async function openLobby(id) {
     allPlayers = data.players || []
     localQuestions = (data.config && Array.isArray(data.config.questions)) ? data.config.questions : []
     document.getElementById("qTimer").value = (data.config && data.config.timer) || 30
+    document.getElementById("qShuffle").checked = !!(data.config && data.config.shuffle)
     document.getElementById("jsonPaste").value = ""
 
     document.getElementById("lobbyHeaderName").textContent = "// " + data.name
@@ -1226,7 +1267,7 @@ async function pushConfig() {
   if (!localQuestions.length) { toast("No questions to push"); return }
   const timer = parseInt(document.getElementById("qTimer").value, 10) || 30
   try {
-    await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", { config: { questions: localQuestions, timer } })
+    await apiFetch("/lobbies/" + currentLobbyId + "/config", "POST", { config: { questions: localQuestions, timer, shuffle: document.getElementById("qShuffle").checked } })
     quizInfo.total = localQuestions.length
     if (quizInfo.phase === "idle") updateQuizStatus()
     toast("Pushed " + localQuestions.length + " questions!")
@@ -1234,42 +1275,113 @@ async function pushConfig() {
 }
 
 // ---- ADMIN ----
-async function loadAdminUsers() {
+let adminUsers = [], adminLobbies = []
+
+function loadAdminAll() { loadAdminStats(); loadAdminUsers(); loadAdminLobbies() }
+
+function fmtUptime(s) {
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60)
+  return (d ? d + "d " : "") + h + "h " + m + "m"
+}
+
+async function loadAdminStats() {
   try {
-    const users = await apiFetch("/admin/users")
-    renderAdminUsers(users)
+    const s = await apiFetch("/admin/stats")
+    const types = Object.entries(s.byType).map(([k, n]) => k + ": " + n).join(", ") || "none"
+    const stat = Object.entries(s.byStatus).map(([k, n]) => k + ": " + n).join(", ") || "none"
+    document.getElementById("adminStats").innerHTML =
+      "Users: " + s.users + " (" + s.banned + " banned, " + s.newUsers24h + " new in 24h)<br>" +
+      "Lobbies: " + s.lobbies + " [" + esc(types) + "]<br>" +
+      "Status: " + esc(stat) + "<br>" +
+      "Players online: " + s.livePlayers + "<br>" +
+      "Uptime: " + fmtUptime(s.uptimeSec) + " - Memory: " + s.memoryMB + " MB"
   } catch(e) { toast("Error: " + e.message) }
 }
 
-function renderAdminUsers(users) {
+async function sendAnnounce() {
+  const message = v("announceMsg")
+  if (!message) return toast("Type a message first")
+  if (!confirm("Send this to every active lobby?")) return
+  try {
+    const r = await apiFetch("/admin/announce", "POST", { message })
+    document.getElementById("announceMsg").value = ""
+    toast("Sent to " + r.lobbies + " lobbies")
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function loadAdminUsers() {
+  try {
+    adminUsers = await apiFetch("/admin/users")
+    renderAdminUsers()
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+function renderAdminUsers() {
   const el = document.getElementById("adminUserList")
+  const q = (document.getElementById("adminUserSearch").value || "").trim().toLowerCase()
+  const users = adminUsers
+    .filter(u => !q || u.email.toLowerCase().includes(q) || String(u.username).toLowerCase().includes(q))
+    .sort((a, b) => b.createdAt - a.createdAt)
   if (!users.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No users</p>'; return }
   el.innerHTML = users.map(u => `
     <div class="user-row">
       <div class="user-info">
         <div class="user-email">${esc(u.email)}</div>
-        <div class="user-sub">${esc(u.username)} - Joined ${new Date(u.createdAt).toLocaleDateString()}</div>
+        <div class="user-sub">${esc(u.username)} - Joined ${new Date(u.createdAt).toLocaleDateString()} - ${u.lobbyCount} lobbies</div>
         ${u.banned ? `<div style="font-size:11px;color:var(--danger)">Banned: ${esc(u.banReason)}</div>` : ""}
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
+      <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
         ${u.banned
           ? `<button class="btn btn-sm btn-surface" data-unban="${esc(u.email)}">Unban</button>`
           : `<button class="btn btn-sm btn-danger" data-ban="${esc(u.email)}">Ban</button>`
         }
+        <button class="btn btn-sm btn-surface" data-reset="${esc(u.email)}">Reset pw</button>
+        <button class="btn btn-sm btn-danger" data-deluser="${esc(u.email)}">Delete</button>
       </div>
     </div>
   `).join("")
   el.querySelectorAll("[data-unban]").forEach(b => b.onclick = () => unbanUser(b.dataset.unban))
   el.querySelectorAll("[data-ban]").forEach(b => b.onclick = () => openBanModal(b.dataset.ban))
+  el.querySelectorAll("[data-reset]").forEach(b => b.onclick = () => resetUserPassword(b.dataset.reset))
+  el.querySelectorAll("[data-deluser]").forEach(b => b.onclick = () => deleteUserAccount(b.dataset.deluser))
+}
+
+async function resetUserPassword(email) {
+  if (!confirm("Reset the password for " + email + "?")) return
+  try {
+    const r = await apiFetch("/admin/users/" + encodeURIComponent(email) + "/reset-password", "POST")
+    document.getElementById("pwTarget").textContent = email
+    document.getElementById("pwValue").textContent = r.password
+    document.getElementById("pwModal").classList.add("open")
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+async function deleteUserAccount(email) {
+  if (!confirm("Permanently delete " + email + " and every lobby they host? This cannot be undone.")) return
+  try {
+    const r = await apiFetch("/admin/users/" + encodeURIComponent(email), "DELETE")
+    toast("Deleted user and " + r.lobbiesRemoved + " lobbies")
+    loadAdminAll()
+  } catch(e) { toast("Error: " + e.message) }
 }
 
 async function loadAdminLobbies() {
   try {
-    const list = await apiFetch("/admin/lobbies")
-    const el = document.getElementById("adminLobbyList")
-    if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No lobbies</p>'; return }
-    el.innerHTML = list.map(l => `
-      <div class="lobby-card ${esc(l.type)}" style="margin-bottom:8px" data-open="${esc(l.id)}">
+    adminLobbies = await apiFetch("/admin/lobbies")
+    renderAdminLobbies()
+  } catch(e) { toast("Error: " + e.message) }
+}
+
+function renderAdminLobbies() {
+  const el = document.getElementById("adminLobbyList")
+  const q = (document.getElementById("adminLobbySearch").value || "").trim().toLowerCase()
+  const list = adminLobbies
+    .filter(l => !q || [l.name, l.hostEmail, l.hostUsername, l.code].some(x => String(x || "").toLowerCase().includes(q)))
+    .sort((a, b) => b.createdAt - a.createdAt)
+  if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">No lobbies</p>'; return }
+  el.innerHTML = list.map(l => `
+    <div class="lobby-card ${esc(l.type)}" style="margin-bottom:8px">
+      <div data-open="${esc(l.id)}" style="cursor:pointer">
         <div class="lobby-name">${esc(l.name)}</div>
         <div class="lobby-meta">Host: ${esc(l.hostEmail)} - Code: ${esc(l.code)} - ${l.playerCount} players</div>
         <div class="lobby-footer">
@@ -1277,8 +1389,24 @@ async function loadAdminLobbies() {
           <span class="lobby-badge badge-${esc(l.status)}">${esc(l.status)}</span>
         </div>
       </div>
-    `).join("")
-    el.querySelectorAll("[data-open]").forEach(c => c.onclick = () => openLobby(c.dataset.open))
+      <div style="display:flex;gap:6px;margin-top:8px">
+        ${l.status !== "ended" ? `<button class="btn btn-sm btn-surface" style="width:auto;margin:0" data-endlobby="${esc(l.id)}">End</button>` : ""}
+        <button class="btn btn-sm btn-danger" style="width:auto;margin:0" data-dellobby="${esc(l.id)}">Delete</button>
+      </div>
+    </div>
+  `).join("")
+  el.querySelectorAll("[data-open]").forEach(c => c.onclick = () => openLobby(c.dataset.open))
+  el.querySelectorAll("[data-endlobby]").forEach(b => b.onclick = () => adminLobbyAction(b.dataset.endlobby, "end"))
+  el.querySelectorAll("[data-dellobby]").forEach(b => b.onclick = () => adminLobbyAction(b.dataset.dellobby, "delete"))
+}
+
+async function adminLobbyAction(id, action) {
+  if (!confirm(action === "end" ? "End this lobby and kick all players?" : "Delete this lobby permanently?")) return
+  try {
+    if (action === "end") await apiFetch("/lobbies/" + encodeURIComponent(id) + "/end", "POST")
+    else await apiFetch("/lobbies/" + encodeURIComponent(id), "DELETE")
+    toast(action === "end" ? "Lobby ended" : "Lobby deleted")
+    loadAdminLobbies(); loadAdminStats()
   } catch(e) { toast("Error: " + e.message) }
 }
 

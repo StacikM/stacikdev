@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stacik.dev - EduHub Privacy Policy</title>
+<style>
+:root{--bg:#0a0a0f;--card:#1c1c28;--border:#2a2a3d;--accent:#c8f545;--text:#e8e8f0;--muted:#8a8aa8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65;font-size:15px}
+main{max-width:780px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:30px;margin:0 0 4px}
+h2{font-size:18px;margin:34px 0 8px;color:var(--accent)}
+p,li{color:var(--text)}
+.meta{color:var(--muted);font-size:13px;margin-bottom:24px}
+a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--card)}
+.note{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:14px 0}
+nav{margin-bottom:24px;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="eduhub.html">&larr; Back to EduHub</a> &middot; <a href="terms.html">Terms of Service</a></nav>
+
+<h1>Privacy Policy</h1>
+<div class="meta">EduHub by Stacik.dev &middot; Last updated: 11 November 2026</div>
+
+<p>This policy explains what personal data EduHub (bingo, quiz and party games, hosted on stacik.dev) collects, why, how long it is kept, and what rights you have. It is written in accordance with the EU General Data Protection Regulation (GDPR) and the French Data Protection Act (<em>Loi Informatique et Libertés</em>).</p>
+
+<h2>1. Who is responsible for your data</h2>
+<p>The data controller is <strong>Stacik</strong>, operating stacik.dev.<br>
+Contact for any privacy question or request: <strong>admin@stacik.dev</strong></p>
+
+<h2>2. What we collect and why</h2>
+<table>
+<tr><th>Data</th><th>Who</th><th>Purpose</th><th>Legal basis (GDPR art. 6)</th></tr>
+<tr><td>Email address, username, password (stored only as a salted PBKDF2-SHA512 hash, never in clear), account creation date, ban status and reason</td><td>Hosts (people with an account)</td><td>Create and secure your account, let you create and manage lobbies, enforce rules</td><td>Contract (6.1.b); legitimate interest in security and moderation (6.1.f)</td></tr>
+<tr><td>Lobby data: lobby name, code, game type and settings, quiz questions and answers you write, results of past sessions</td><td>Hosts</td><td>Run the games you create and show you past results</td><td>Contract (6.1.b)</td></tr>
+<tr><td>Display name you choose, random player ID and secret player key, scores, answers, game progress, bingo board and marks</td><td>Players (no account needed)</td><td>Let you take part in a game, keep your spot if you reconnect, compute scores and leaderboards</td><td>Contract (6.1.b); legitimate interest (6.1.f)</td></tr>
+<tr><td>Technical data: IP address, connection timestamps, browser information, server error logs</td><td>Everyone</td><td>Operate the service, prevent abuse and attacks, apply bans</td><td>Legitimate interest (6.1.f)</td></tr>
+</table>
+<p>We do <strong>not</strong> ask for your real name, address, phone number, date of birth or payment details. Please do not use your real full name as a display name, and do not put personal data in lobby names or quiz questions.</p>
+<p>We do not use advertising, analytics or tracking cookies, and we do not sell your data. We do not do automated decision-making or profiling with legal effect.</p>
+
+<h2>3. Browser storage (cookies and similar)</h2>
+<p>EduHub does not set advertising or analytics cookies. It uses your browser's local storage only for things strictly necessary to provide the service you ask for:</p>
+<ul>
+<li>your login token (valid 30 days) so you stay signed in (<code>eduhub_token</code>);</li>
+<li>the display name you last used and the identifiers needed to rejoin a game after a refresh.</li>
+</ul>
+<p>Because these are strictly necessary, no consent banner is required (CNIL guidelines). You can erase them at any time by logging out or clearing your browser data.</p>
+
+<h2>4. How long we keep it</h2>
+<table>
+<tr><th>Data</th><th>Retention</th></tr>
+<tr><td>Account (email, username, password hash)</td><td>Until you ask for deletion, or until the account is deleted for inactivity. Ban records are kept as long as needed to prevent circumvention.</td></tr>
+<tr><td>Lobbies and player data inside them</td><td>Ended lobbies are removed about 1 hour after they end; lobbies with no activity are removed after 24 hours; hosts can delete a lobby at any time. When a host ends a session, the player list is cleared immediately.</td></tr>
+<tr><td>Server logs (IP addresses)</td><td>We do not keep our own IP logs. Short-lived technical logs are held by our hosting provider for a limited time and then discarded.</td></tr>
+</table>
+
+<h2>5. Who receives your data</h2>
+<ul>
+<li><strong>Other participants:</strong> in a game, your display name, score and progress are visible to the host and other players in that lobby. A host sees the player list and results of their lobbies, but never your email or IP address. Public lobbies show the host's username.</li>
+<li><strong>Administrator:</strong> the operator of the service can see registered users' email addresses and usernames in order to moderate the service.</li>
+<li><strong>Hosting provider:</strong> <strong>Fly.io, Inc. (United States)</strong>, which runs servers in the region(s) where the app is deployed, stores the data on our behalf as a processor.</li>
+<li><strong>Third-party resources loaded by your browser:</strong> to display the pages, your browser fetches fonts from Google Fonts (<em>fonts.googleapis.com</em>), the real-time library from cdn.socket.io, and a QR code library from cdn.jsdelivr.net. Those providers necessarily receive your IP address and browser information when you load the page, under their own privacy policies. This may involve transfers outside the EU, covered where applicable by the EU-US Data Privacy Framework or standard contractual clauses.</li>
+<li>Authorities, where required by law.</li>
+</ul>
+
+<h2>6. Your rights</h2>
+<p>Under the GDPR you have the right to access, rectify, erase, restrict or object to the processing of your data, and the right to data portability. You may also set instructions for what happens to your data after your death (French law, art. 85 of the Loi Informatique et Libertés).</p>
+<p>To exercise these rights, email <strong>admin@stacik.dev</strong> from the address linked to your account. We will answer within one month. We may ask you to prove your identity. Players without an account are identified only by a random ID, so tell us your display name, the lobby and the approximate time of the game to help us find your data.</p>
+<p>If you believe your rights are not respected, you can lodge a complaint with the French supervisory authority: <strong>CNIL</strong>, 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, <a href="https://www.cnil.fr" target="_blank" rel="noopener">www.cnil.fr</a>. You may also contact the authority of your own EU country.</p>
+
+<h2>7. Children</h2>
+<p>EduHub is aimed at classrooms and groups, so young people may use it. In France, a minor under 15 cannot consent alone to the processing of their data online: under-15s may only create an account with the authorisation of a parent or guardian. Players joining a game with just a display name should use a nickname, never a real full name. Teachers and organisers who run a game with minors are responsible for informing participants and parents as required. If you believe a child's data was collected without permission, contact us and we will delete it.</p>
+
+<h2>8. Security</h2>
+<p>Passwords are hashed with a salt and are never stored in clear. Login sessions use signed tokens. Connections should be made over HTTPS. No system is perfectly secure: if a breach likely to put your rights at risk occurs, we will notify the CNIL and, where required, you, within the legal deadlines.</p>
+
+<h2>9. Changes</h2>
+<p>We may update this policy; the date at the top shows the latest version. For significant changes we will inform registered users.</p>
+</main>
+</body>
+</html>

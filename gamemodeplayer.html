@@ -267,10 +267,11 @@ const API = SERVER + "/eduhub"
 const socket = io(SERVER + "/eduhub")
 
 // ---- identity (keys are stored per lobby so joining another lobby never breaks a reconnect) ----
-let myId = localStorage.getItem("edu_pid") || "p_" + Math.random().toString(36).slice(2, 11)
-localStorage.setItem("edu_pid", myId)
-function getKeys() { try { return JSON.parse(localStorage.getItem("edu_pkeys") || "{}") } catch { return {} } }
-function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("edu_pkeys", JSON.stringify(k)) }
+// sessionStorage = one identity per tab/window (localStorage is shared by every window of a browser)
+let myId = sessionStorage.getItem("edu_pid") || "p_" + Math.random().toString(36).slice(2, 11)
+sessionStorage.setItem("edu_pid", myId)
+function getKeys() { try { return JSON.parse(sessionStorage.getItem("edu_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; sessionStorage.setItem("edu_pkeys", JSON.stringify(k)) }
 const myKey = () => getKeys()[myLobbyId] || null
 
 let myName = ""
@@ -432,7 +433,7 @@ socket.on("error_msg", msg => {
 socket.on("players_update", list => {
   allPlayers = list || []
   const me = allPlayers.find(p => p.playerId === myId)
-  if (me) { myScore = me.score || 0; alive = me.alive !== false; updateHeader() }
+  if (me) { myScore = me.score || 0; alive = me.alive !== false; updateHeader(); $("headerName").textContent = me.name }
 })
 
 socket.on("quiz_state", snap => {
@@ -571,7 +572,8 @@ function applyQuestion(q) {
   Q = q
   phase = "question"
   eliminated = (q.eliminated || []).slice()
-  order = seededOrder(q.answers.length, myId + "|" + myLobbyId + "|" + q.index)
+  // Same order for everyone unless the host turned shuffling on (then it's stable per player)
+  order = q.shuffle ? seededOrder(q.answers.length, myId + "|" + myLobbyId + "|" + q.index) : q.answers.map((_, i) => i)
   $("endArea").style.display = "none"
   const label = "QUESTION " + (q.index + 1) + (q.total ? " / " + q.total : "")
   $("headerProgress").textContent = "Q" + (q.index + 1) + (q.total ? "/" + q.total : "")

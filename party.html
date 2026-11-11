@@ -171,10 +171,12 @@ const SERVER = "https://server.ctksystem.com"
 const API = SERVER + "/eduhub"
 const socket = io(SERVER + "/eduhub")
 
-let myId = localStorage.getItem("party_pid") || "y_" + Math.random().toString(36).slice(2, 11)
-localStorage.setItem("party_pid", myId)
-function getKeys() { try { return JSON.parse(localStorage.getItem("party_pkeys") || "{}") } catch { return {} } }
-function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("party_pkeys", JSON.stringify(k)) }
+// Identity lives in sessionStorage so every tab/window is its own player (and still survives a refresh).
+// localStorage is shared by all windows of a browser (incl. all incognito windows), which merged players into one.
+let myId = sessionStorage.getItem("party_pid") || "y_" + Math.random().toString(36).slice(2, 11)
+sessionStorage.setItem("party_pid", myId)
+function getKeys() { try { return JSON.parse(sessionStorage.getItem("party_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; sessionStorage.setItem("party_pkeys", JSON.stringify(k)) }
 const myKey = () => getKeys()[myLobbyId] || null
 
 let myName = "", myLobbyId = null, myLobbyName = ""
@@ -260,12 +262,17 @@ document.addEventListener("visibilitychange", () => {
 })
 socket.on("player_key", ({ playerKey, lobbyId }) => setKey(lobbyId || myLobbyId, playerKey))
 socket.on("party_meta", m => { gameName = m.name || "Party"; $("hGame").textContent = gameName })
-socket.on("players_update", list => { lobbyPlayers = list || []; if (!S) render() })
+socket.on("players_update", list => {
+  lobbyPlayers = list || []
+  const me = lobbyPlayers.find(p => p.playerId === myId)
+  if (me) $("hName").textContent = me.name
+  if (!S) render()
+})
 socket.on("party_state", s => {
   S = s
   $("hGame").textContent = s.gameName || gameName
   const me = s.players.find(p => p.id === myId)
-  if (me) $("hScore").textContent = me.score + " pts"
+  if (me) { $("hScore").textContent = me.score + " pts"; $("hName").textContent = me.name }
   startTimer(s.endsAt ? s.endsAt - s.now : 0, s)
   render()
 })

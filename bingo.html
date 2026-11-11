@@ -193,11 +193,12 @@ const SERVER = "https://server.ctksystem.com"
 const API = SERVER + "/eduhub"
 const socket = io(SERVER + "/eduhub")
 
-let myId = localStorage.getItem("bingo_pid") || "b_" + Math.random().toString(36).slice(2, 11)
-localStorage.setItem("bingo_pid", myId)
-// keys are stored per lobby so joining a second lobby never breaks reconnecting to the first
-function getKeys() { try { return JSON.parse(localStorage.getItem("bingo_pkeys") || "{}") } catch { return {} } }
-function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; localStorage.setItem("bingo_pkeys", JSON.stringify(k)) }
+// sessionStorage = one identity per tab/window (localStorage is shared by every window of a browser).
+// Keys are stored per lobby so joining a second lobby never breaks reconnecting to the first.
+let myId = sessionStorage.getItem("bingo_pid") || "b_" + Math.random().toString(36).slice(2, 11)
+sessionStorage.setItem("bingo_pid", myId)
+function getKeys() { try { return JSON.parse(sessionStorage.getItem("bingo_pkeys") || "{}") } catch { return {} } }
+function setKey(lobbyId, key) { const k = getKeys(); k[lobbyId] = key; sessionStorage.setItem("bingo_pkeys", JSON.stringify(k)) }
 const myKey = () => getKeys()[myLobbyId] || null
 
 let myName = ""
